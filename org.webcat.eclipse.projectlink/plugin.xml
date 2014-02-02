@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="org.webcat.eclipse.projectlink.preferences.ProjectLinkPreferencePage"
+            id="org.webcat.eclipse.projectlink.preferencesPage"
+            name="Configured Assignments">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.ui.importWizards">
+      <wizard
+            category="org.webcat.eclipse.projectlink.category.assignments"
+            class="org.webcat.eclipse.projectlink.importer.DownloadAssignmentWizard"
+            icon="icons/inbox-download.png"
+            id="org.webcat.eclipse.projectlink.import.wizard"
+            name="Download Starter Project for an Assignment">
+         <description>
+            Download an assignment from Web-CAT.
+         </description>
+      </wizard>
+      <category
+            id="org.webcat.eclipse.projectlink.category.assignments"
+            name="Configured Assignments">
+      </category>
+   </extension>
+   <extension
+         point="org.eclipse.ui.exportWizards">
+      <wizard
+            category="org.webcat.eclipse.projectlink.category.assignments"
+            class="org.webcat.eclipse.projectlink.exporter.SubmitAssignmentWizard"
+            icon="icons/inbox-upload.png"
+            id="org.webcat.eclipse.projectlink.export.wizard"
+            name="Submit Assignment for Grading">
+         <description>
+            Submit an assignment to be graded by Web-CAT.
+         </description>
+      </wizard>
+      <category
+            id="org.webcat.eclipse.projectlink.category.assignments"
+            name="Configured Assignments">
+      </category>
+   </extension>
+   <extension
+         point="org.eclipse.ui.actionSets">
+      <actionSet
+            description="Download assignments and submit them electronically."
+            id="org.webcat.eclipse.projectlink.actionSet"
+            label="Configured Assignments"
+            visible="true">
+         <action
+               class="org.webcat.eclipse.projectlink.importer.DownloadAssignmentAction"
+               icon="icons/inbox-download.png"
+               id="org.webcat.eclipse.projectlink.actions.download"
+               label="&amp;Download Assignment..."
+               menubarPath="project/additions"
+               style="push"
+               toolbarPath="org.webcat.eclipse.projectlink.configuredAssignmentsActionSet"
+               tooltip="Download the starter project for an assignment">
+         </action>
+         <action
+               class="org.webcat.eclipse.projectlink.exporter.SubmitAssignmentAction"
+               icon="icons/inbox-upload.png"
+               id="org.webcat.eclipse.projectlink.actions.submit"
+               label="&amp;Submit Assignment..."
+               menubarPath="project/additions"
+               style="push"
+               toolbarPath="org.webcat.eclipse.projectlink.configuredAssignmentsActionSet"
+               tooltip="Submit an assignment for grading">
+         </action>
+      </actionSet>
+   </extension>
+
+</plugin>

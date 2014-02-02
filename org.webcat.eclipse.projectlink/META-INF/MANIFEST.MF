@@ -1,0 +1,19 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Web-CAT Project Link
+Bundle-SymbolicName: org.webcat.eclipse.projectlink;singleton:=true
+Bundle-Version: 1.0.1.qualifier
+Bundle-Activator: org.webcat.eclipse.projectlink.Activator
+Bundle-Vendor: Web-CAT Development Team
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.ui.ide,
+ org.eclipse.core.runtime,
+ org.eclipse.core.resources
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .,
+ lib/webcat-submitter-1.0.5.jar
+Export-Package: org.webcat.eclipse.projectlink.exporter,
+ org.webcat.eclipse.projectlink.importer,
+ org.webcat.eclipse.projectlink.importer.model,
+ org.webcat.eclipse.projectlink.util
