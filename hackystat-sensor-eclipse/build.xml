@@ -1,0 +1,134 @@
+<project name="build" default="compile" xmlns:ivy="antlib:org.apache.ivy.ant">
+  <description>
+  The basic build file for the Hackystat Eclipse headless build. Note that the Eclipse
+  PDE can build the Eclipse sensor using the plugin editor.
+  </description>
+  
+  <!-- The Eclipse sensor requires a special src/ dir location, so override common.build.xml. -->
+  <property name="src.dir" location="${basedir}/plugin/src" />
+  
+  <import file="common.build.xml" />
+
+  <target name="install-libraries" description="Install libraries needed for compilation">
+    <ivy:retrieve organisation="org.junit" module="junit" revision="${junit.version}" pattern="${lib.dir}/junit/[artifact].[ext]" sync="true" inline="true" conf="default" log="download-only" transitive="false" type="jar" />
+    <path id="junit.path" location="${lib.dir}/junit/junit.jar" />
+
+    <ivy:retrieve organisation="org.hackystat" module="hackystat-sensor-shell" revision="latest.integration" pattern="${lib.dir}/hackystat-sensor-shell/[artifact].[ext]" sync="true" inline="true" conf="default" log="download-only" transitive="false" type="jar, javadoc, source" />
+    <path id="hackystat-sensor-shell.path" location="${lib.dir}/hackystat-sensor-shell/sensorshell.jar" />
+  </target>
+  
+  <!-- Import environment variables so we can access ECLIPSE_HOME, then verify it's available. -->
+  <property environment="env" />
+  <available file="${env.ECLIPSE_HOME}" property="eclipse.available" />
+  <fail unless="eclipse.available" message="Error: ECLIPSE_HOME not set. Eclipse 3.5 is required." />
+
+  <!-- Basic properties for this system. -->
+  <property name="system.name" value="hackystat-sensor-eclipse" />
+
+  <!-- The compile classpath is useful to many tools. -->
+  <!-- On windows, including all of the plugins directory kills FindBugs and JUnit, so we exclude some jars. -->
+  <path id="compile.classpath">
+    <path refid="junit.path" />
+    <path refid="hackystat-sensor-shell.path" />
+    <fileset dir="${env.ECLIPSE_HOME}/plugins">
+      <include name="*.jar" />
+      <exclude name="org.eclipse.pde.*"/>
+      <exclude name="org.eclipse.team.*"/>
+      <exclude name="org.eclipse.ecf.*"/>
+      <exclude name="org.eclipse.ant.*"/>
+      <exclude name="org.eclipse.help.*"/>
+      <exclude name="org.eclipse.equinox.p2.*"/>
+      <exclude name="com.ibm.*"/>
+      <exclude name="com.jcraft.*"/>
+      <exclude name="javax.*"/>
+      <exclude name="org.apache.*"/>
+    </fileset>
+  </path>
+  
+ 
+  <!-- P2 Publisher Settings. -->
+  <property name="p2.publishonerror" value="false" />
+
+  <!-- Compiler settings. -->
+  <property name="javacFailOnError" value="true" />
+  <property name="javacDebugInfo" value="on" />
+  <property name="javacVerbose" value="false" />
+  <property name="logExtension" value=".log" />
+  <property name="compilerArg" value="" />
+  <property name="javacSource" value="1.5" />
+  <property name="javacTarget" value="1.5" />
+
+  <condition property="bundleBootClasspath" value="${JavaSE-1.6}">
+    <isset property="JavaSE-1.6" />
+  </condition>
+  <condition property="bundleJavacSource" value="1.6">
+    <isset property="JavaSE-1.6" />
+  </condition>
+  <condition property="bundleJavacTarget" value="1.6">
+    <isset property="JavaSE-1.6" />
+  </condition>
+  
+  <property name="bundleJavacSource" value="${javacSource}" />
+  <property name="bundleJavacTarget" value="${javacTarget}" />
+  <property name="bundleBootClasspath" value="${bootclasspath}" />
+
+  <target name="init" depends="properties">
+    <property name="plugin.destination" value="${basedir}" />
+    <condition property="p2.publish.parts" value="true">
+      <istrue value="${p2.gathering}" />
+    </condition>
+    <property name="compilation.problem.marker" value="${build.dir}/compilation.problem" />
+    <condition property="compilation.problem.marker.exists" value="true">
+      <and>
+        <available file="${compilation.problem.marker}" />
+        <isfalse value="p2.publishonerror" />
+      </and>
+    </condition>
+  </target>
+
+  <target name="properties" if="eclipse.running">
+    <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter" />
+  </target>
+  
+  <target name="compile" depends="clean, install-ivy, install-libraries, init" description="Compile classes and build nested jars for the plug-in: org.hackystat.sensor.eclipse.">
+    
+    <!-- Temporary directory to hold the contents that will be in sensor.eclipse.jar. -->
+    <property name="sensor.eclipse.jar.bin.dir" value="${build.dir}/classes"/>
+    <mkdir dir="${sensor.eclipse.jar.bin.dir}" />
+    
+    <!-- compile the source code -->
+    <javac destdir="${sensor.eclipse.jar.bin.dir}" 
+           failonerror="${javacFailOnError}" 
+           verbose="${javacVerbose}" 
+           debug="${javacDebugInfo}" 
+      	   includeAntRuntime="no" 
+           bootclasspath="${bundleBootClasspath}" 
+           source="${bundleJavacSource}" 
+           target="${hackystat.javac.target}">
+      <compilerarg line="${compilerArg}" compiler="${build.compiler}" />
+      <classpath refid="compile.classpath" />
+      <src path="${src.dir}" />
+      <compilerarg line="-log '${build.dir}/sensor.eclipse.jar.bin${logExtension}'" compiler="org.eclipse.jdt.core.JDTCompilerAdapter" />
+    </javac>
+    
+    <!-- Print out any compilation errors. --> 
+    <antcall target="checkCompilationResults" />
+    
+    <!-- Copy necessary resources to the bin dir. -->
+    <copy todir="${sensor.eclipse.jar.bin.dir}" failonerror="true" overwrite="false">
+      <fileset dir="${src.dir}">
+        <exclude name="**/*.java" />
+        <exclude name="**/package.htm*" />
+      </fileset>
+    </copy>
+    
+    <!-- Make the sensor.eclipse.jar file. Use jar.build.xml to build the 'wrapper' jar file.  -->   
+    <jar destfile="${build.dir}/sensor.eclipse.jar" basedir="${sensor.eclipse.jar.bin.dir}" />
+  </target>
+  
+  <target name="checkCompilationResults" if="compilation.error.occured">
+    <echo file="${compilation.problem.marker}" message="org.hackystat.sensor.eclipse : compilation.error.occured=${compilation.error.occured}" />
+  </target>
+
+</project>
+

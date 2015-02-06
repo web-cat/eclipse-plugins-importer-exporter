@@ -1,0 +1,20 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Hackystat Eclipse Sensor
+Bundle-SymbolicName: org.hackystat.sensor.eclipse;singleton:=true
+Bundle-Version: 8.0.1123
+Bundle-Activator: org.hackystat.sensor.eclipse.EclipseSensorPlugin
+Bundle-Vendor: Collaborative Software Development Laboratory
+Bundle-Localization: plugin
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.core.resources,
+ org.eclipse.jdt.core,
+ org.eclipse.jdt.junit,
+ org.eclipse.debug.core,
+ org.eclipse.jface.text,
+ org.eclipse.ui,
+ org.eclipse.ui.workbench.texteditor,
+ org.eclipse.ui.ide
+Eclipse-LazyStart: true
+Bundle-ClassPath: sensor.eclipse.jar,lib/sensorshell.jar
+Bundle-RequiredExecutionEnvironment: J2SE-1.5

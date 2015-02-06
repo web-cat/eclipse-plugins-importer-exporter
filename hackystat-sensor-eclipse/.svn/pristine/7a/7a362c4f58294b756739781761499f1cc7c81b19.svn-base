@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension point="org.eclipse.ui.startup">
+      <startup class="org.hackystat.sensor.eclipse.SensorStartup"/>
+   </extension>
+   <extension point="org.eclipse.core.runtime.preferences">
+     <initializer class="org.hackystat.sensor.eclipse.preference.PreferenceInitializer"/>
+   </extension>
+   <extension point="org.eclipse.ui.preferencePages">
+      <page 
+         id="HackystatSensorPrefernece" 
+         name="Hackystat Sensor" 
+         class="org.hackystat.sensor.eclipse.preference.SensorPreferencePage"> 
+      </page> 
+   </extension>
+   <extension point="org.eclipse.jdt.junit.testRunListeners">
+     <testRunListener class="org.hackystat.sensor.eclipse.addon.TestRunnerSensor"/>
+   </extension>
+</plugin>

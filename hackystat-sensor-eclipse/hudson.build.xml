@@ -1,0 +1,36 @@
+<project name="hudson.eclipse" default="hudson.basic">
+  <description>
+    Tasks for use by Hudson continuous integration system.
+  </description
+
+  <!-- Now import the target definitions. -->
+  <import file="javadoc.build.xml"/>  
+  <import file="javancss.build.xml"/>  
+  <import file="pmd.build.xml"/>
+  <import file="findbugs.build.xml"/>
+  <import file="checkstyle.build.xml"/>
+  <import file="junit.build.xml"/>
+  <import file="emma.build.xml"/>
+  <import file="jar.build.xml"/>
+  <import file="dist.build.xml"/>
+  
+      
+  <target name="hudson.basic" 
+    depends="clean, compile, checkstyle.tool, junit.tool, pmd.tool, jar, dist" 
+    description="Fast build for production purposes. No sensors.">
+  </target>
+  
+  <target name="hudson.daily.build" 
+     depends="clean, compile, checkstyle.tool, junit.tool, pmd.tool, jar" 
+     description="Builds and runs all QA stuff in preparation for sending sensor data.">
+  </target>
+
+  <target name="hudson.daily.junit" 
+    depends="junit.tool, junit.sensor"  description="JUnit plus sensor."/>
+  
+  <target name="hudson.daily.javancss"  
+    depends="javancss.tool, javancss.sensor"  description="JavaNCSS plus sensor."/>
+  
+  <target name="hudson.daily.emma"  description="No emma yet."/>
+  
+</project>

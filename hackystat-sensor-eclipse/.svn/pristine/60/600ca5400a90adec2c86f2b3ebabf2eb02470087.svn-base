@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>hackystat-sensor-eclipse</name>
+	<comment></comment>
+	<projects>
+		<project>sensor-eclipse-feature</project>
+		<project>sensor-eclipse-plugin</project>
+		<project>sensor-eclipse-site</project>
+	</projects>
+	<buildSpec>
+	</buildSpec>
+	<natures>
+	</natures>
+</projectDescription>

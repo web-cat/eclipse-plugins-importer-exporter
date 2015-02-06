@@ -1,0 +1,65 @@
+<project name="jar" default="jar">
+  <description>
+  Provides the target for building a jar file of the SensorBase.
+  </description>
+
+  <import file="build.xml"/>
+  
+  <tstamp>
+    <format property="YMDSTAMP" pattern="yyyyMMdd" />
+  </tstamp>
+  <property name="plugin.version" value="${majorVersionNumber}.${minorVersionNumber}.v${YMDSTAMP}"/>
+ 
+  <target name="jar" depends="compile">
+    <!-- Folder to hold everything that needs to be put in the org.hackystat.sensor.eclipse.*.jar. -->
+    <property name="plugin.bin.dir" value="${build.dir}/org.hackystat.sensor.eclipse" />
+    
+    <mkdir dir="${plugin.bin.dir}" />
+    
+    <!-- Gather required libraries and other plugin files. -->
+    <copy todir="${plugin.bin.dir}" failonerror="true" overwrite="true">
+     	<filterset>
+    	    <filter token="Version" value="${version}"/>
+      </filterset>
+      <fileset file="${build.dir}/sensor.eclipse.jar" />
+      <fileset dir="${basedir}/plugin">
+        <include name="META-INF/" />
+        <include name="plugin.xml" />
+      </fileset>
+    </copy>
+    <copy todir="${plugin.bin.dir}/lib">
+      <fileset file="${lib.dir}/hackystat-sensor-shell/sensorshell.jar" />
+    </copy>
+
+    <antcall target="updateVersion">
+      <param name="plugin.bin.dir" value="${plugin.bin.dir}"/>
+    </antcall>
+    <antcall target="apitools.generation">
+      <param name="target.folder" value="${build.dir}/org.hackystat.sensor.eclipse" />
+      <param name="projectLocation" value="${basedir}" />
+      <param name="projectName" value="${bundleId}_${bundleVersion}" />
+      <param name="binary.folders" value="${build.dir}/org.hackystat.sensor.eclipse/sensor.eclipse.jar:${lib.dir}/hackystat-sensor-shell/sensorshell.jar" />
+    </antcall>
+    
+    <!-- Make a binary release on the top-level directory. Create a property so we can reference it in the install target. -->
+    <property name="jar.file.path" value="${plugin.destination}/org.hackystat.sensor.eclipse_${plugin.version}.jar"/>
+    <jar destfile="${jar.file.path}"
+      	basedir="${build.dir}/org.hackystat.sensor.eclipse" filesetmanifest="merge" />
+  </target>
+  
+  <target name="updateVersion" description="Updates the version number in the manifest.">
+    <replaceregexp match="[\d]+\.[\d]+\.\\v?[\d]+" replace="${plugin.version}" flags="g">
+      <fileset file="${plugin.bin.dir}/META-INF/MANIFEST.MF" />
+    </replaceregexp>
+  </target>
+  
+  <target name="apitools.generation" if="generateAPIDescription" description="Generates files required by ApiTooling for binary bundles.">
+    <apitooling.apigeneration projectName="${projectName}" project="${projectLocation}" binary="${binary.folders}" target="${target.folder}" />
+  </target>
+  
+  <target name="install" depends="jar" description="Creates the jar file, then copies to the local Eclipse plugins/ directory.">
+    <copy todir="${env.ECLIPSE_HOME}/plugins" overwrite="true">
+      <fileset file="${jar.file.path}"/>
+    </copy>
+  </target>
+</project>

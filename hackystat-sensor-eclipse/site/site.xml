@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <description url="index.html">
+      The Hackystat Sensor Update Site contains feature and plug-in versions for Hackystat sensor for Eclipse project releases.
+   </description>
+   <feature url="features/org.hackystat.sensor.eclipse_8.0.1123.jar" id="org.hackystat.sensor.eclipse" version="8.0.1123"/>
+</site>

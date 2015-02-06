@@ -1,0 +1,11 @@
+bin.includes = META-INF/,\
+               plugin.xml,\
+               sensor.eclipse.jar,\
+               lib/sensorshell.jar,\
+               lib/activation.jar,\
+               lib/jaxb-api.jar,\
+               lib/jaxb-impl.jar,\
+               lib/jsr173_1.0_api.jar
+jars.compile.order = sensor.eclipse.jar
+output.sensor.eclipse.jar = bin/
+source.sensor.eclipse.jar = src/
