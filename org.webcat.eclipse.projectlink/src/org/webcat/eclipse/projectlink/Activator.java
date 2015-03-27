@@ -22,11 +22,16 @@ package org.webcat.eclipse.projectlink;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
 //--------------------------------------------------------------------------
@@ -47,6 +52,7 @@ public class Activator extends AbstractUIPlugin
 	private String lastEnteredPartners = "";
 	private String lastEnteredPassword;
 	private String lastSubmittedAssignmentPath;
+	
 
 
 	// ----------------------------------------------------------
@@ -58,6 +64,7 @@ public class Activator extends AbstractUIPlugin
 	{
 		super.start(context);
 		plugin = this;
+		EclipseSensor.getInstance();
 	}
 
 
@@ -70,6 +77,9 @@ public class Activator extends AbstractUIPlugin
 	{
 		plugin = null;
 		super.stop(context);
+		
+	    EclipseSensor sensor = EclipseSensor.getInstance();
+	    sensor.stop();
 	}
 
 
@@ -269,4 +279,40 @@ public class Activator extends AbstractUIPlugin
 	{
 		lastSubmittedAssignmentPath = path;
 	}
+	
+	  /**
+	   * Returns the workspace instance. This method might be overridden due to AbstractUIPlugin
+	   * abstract class although it is not necessary to be overridden.
+	   *
+	   * @return The IWorkspace instance.
+	   *
+	   * @see AbstractUIPlugin
+	   */
+	  public static IWorkspace getWorkspace() {
+	    return ResourcesPlugin.getWorkspace();
+	  }
+	  
+	  /**
+	   * Logs out the exception or error message for Eclipse sensor plug-in.
+	   * 
+	   * @param message Error message.
+	   * @param e Exception. 
+	   */
+	  public void log(String message, Exception e) {
+	    String pluginName = super.getBundle().getSymbolicName();
+	    IStatus status = new Status(IStatus.ERROR, pluginName, 0, message + " " + e.getMessage(), e);
+	    
+	    plugin.getLog().log(status);
+	  }
+	  
+	  /**
+	   * Logs out the exception or error message for Eclipse sensor plug-in.
+	   * 
+	   * @param e Exception. 
+	   */
+	  public void log(Exception e) {
+	    String pluginName = super.getBundle().getSymbolicName();
+	    IStatus status = new Status(IStatus.ERROR, pluginName, 0, e.getMessage(), e);
+	    plugin.getLog().log(status);
+	  }
 }

@@ -80,4 +80,15 @@ public interface IPreferencesConstants
 
 	public static final String DOWNLOADED_PROJECTS = Activator.PLUGIN_ID
 			+ ".preferences.downloaded_projects";
+	
+	
+	// ----------------------------------------------------------
+	/**
+	 * Preferences store keys for DevEventTracker.
+	 */
+	public static final String STORED_USER_UUID = Activator.PLUGIN_ID
+			+ ".preferences.user_uuid";
+	
+	public static final String OFFLINE_STORAGE_DIRECTORY = Activator.PLUGIN_ID
+			+ ".preferences.offline_storage_dir";
 }
