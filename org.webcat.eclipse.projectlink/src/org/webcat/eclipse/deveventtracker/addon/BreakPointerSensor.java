@@ -14,7 +14,6 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.projectlink.Activator;
-
 /**
  * Listens to the break point changes to send activity data to Hackystat server.
  * 

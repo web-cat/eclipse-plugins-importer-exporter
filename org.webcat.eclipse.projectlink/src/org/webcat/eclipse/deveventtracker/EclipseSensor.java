@@ -7,10 +7,11 @@ import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CUR
 import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_ASSERTIONS;
 import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_METHODS;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -57,6 +58,9 @@ import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
  * Provides all the necessary sensor initialization and collects data in this singleton class. A
@@ -943,7 +947,8 @@ public class EclipseSensor {
         if (((IProject) resource).isOpen()) {
           keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
           EclipseSensor.this.addDevEvent(EclipseSensorConstants.DEVEVENT_EDIT, projectResource, projectResource, 
-            keyValueMap, projectResource.toString());          
+            keyValueMap, projectResource.toString());
+          
         }
         else {
           keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Close");
@@ -999,6 +1004,8 @@ public class EclipseSensor {
           keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Save");
           EclipseSensor.this.addDevEvent(EclipseSensorConstants.DEVEVENT_EDIT, projectURI, fileResource, 
               keyValueMap, message.toString());
+          EclipseSensor.this.commitSnapshot(resource.getLocationURI().toString());
+
         }
 
         // Visit the children because it is not necessary for the saving file to be only one file.
@@ -1015,4 +1022,25 @@ public class EclipseSensor {
   public void stop() {
     this.sensorShellWrapper.quit();
   }
+
+public void commitSnapshot(String resourceUri) {
+    // Here, we check to see if we have a local repository already.
+    // Otherwise, we need to create one.
+    File localRepoDir = new File(resourceUri, "/.git");
+    if(!localRepoDir.isDirectory())
+    {
+  	  localRepoDir.mkdirs();
+    }
+    FileRepositoryBuilder builder = new FileRepositoryBuilder();
+    try {
+		Repository localRepo = builder.setGitDir(localRepoDir).readEnvironment().findGitDir().build();
+		Git git = new Git(localRepo);
+		
+		
+		
+		localRepo.close();
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
+}
 }
