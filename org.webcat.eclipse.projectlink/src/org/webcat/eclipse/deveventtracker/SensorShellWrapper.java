@@ -3,6 +3,7 @@ package org.webcat.eclipse.deveventtracker;
 import java.util.Map;
 
 import org.eclipse.jface.action.IStatusLineManager;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorPart;
@@ -35,6 +36,11 @@ public class SensorShellWrapper {
    */
   SensorShellWrapper(SensorShellProperties sensorShellProperties) throws SensorShellException {
     this.shell = new SensorShell(sensorShellProperties, false, "Eclipse");
+  }
+  
+  public void commitSnapshot(RevCommit commit)
+  {
+	  shell.commitSnapshot(commit);
   }
   
   /**

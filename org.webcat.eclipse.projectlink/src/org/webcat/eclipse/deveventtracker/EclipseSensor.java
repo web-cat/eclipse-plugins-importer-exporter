@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -59,7 +60,10 @@ import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
@@ -313,7 +317,6 @@ public class EclipseSensor {
     if (projectUri != null) {
         keyValueMap.put("ProjectURI", projectUri.toString());
       }
-
     if (moreKeyValueMap != null) {
       keyValueMap.putAll(moreKeyValueMap);
     }
@@ -1002,9 +1005,14 @@ public class EclipseSensor {
           message.append(" : ").append(EclipseSensor.this.extractFileName(fileResource));
           
           keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Save");
+          //TODO message here
+          ObjectId hash = EclipseSensor.this.commitSnapshot(resource.getLocationURI().toString(), "");
+          if (hash != null)
+          {
+        	  keyValueMap.put("CommitHash", hash.getName());
+          }
           EclipseSensor.this.addDevEvent(EclipseSensorConstants.DEVEVENT_EDIT, projectURI, fileResource, 
               keyValueMap, message.toString());
-          EclipseSensor.this.commitSnapshot(resource.getLocationURI().toString());
 
         }
 
@@ -1023,7 +1031,7 @@ public class EclipseSensor {
     this.sensorShellWrapper.quit();
   }
 
-public void commitSnapshot(String resourceUri) {
+public ObjectId commitSnapshot(String resourceUri, String message) {
     // Here, we check to see if we have a local repository already.
     // Otherwise, we need to create one.
     File localRepoDir = new File(resourceUri, "/.git");
@@ -1035,12 +1043,21 @@ public void commitSnapshot(String resourceUri) {
     try {
 		Repository localRepo = builder.setGitDir(localRepoDir).readEnvironment().findGitDir().build();
 		Git git = new Git(localRepo);
+		//Add all files in the project directory if they aren't already
+		git.add().addFilepattern(resourceUri).call();
 		
-		
-		
+		//Actual commit
+		RevCommit commit = git.commit().setMessage(message).call();
+		this.sensorShellWrapper.commitSnapshot(commit);
 		localRepo.close();
+		return commit.getId();
 	} catch (IOException e) {
 		e.printStackTrace();
+	} catch (NoFilepatternException e) {
+		e.printStackTrace();
+	} catch (GitAPIException e) {
+		e.printStackTrace();
 	}
+    return null;
 }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
 /**
@@ -181,4 +182,8 @@ public class MultiSensorShell implements Shell {
   public SensorShellProperties getProperties() {
     return this.shells.get(0).getProperties();
   }
+
+public void commitSnapshot(RevCommit commit) {
+	this.shells.get(getCurrShellIndex()).commitSnapshot(commit);
+}
 }

@@ -3,6 +3,7 @@ package org.webcat.eclipse.deveventtracker.sensorshell;
 import java.io.File;
 import java.util.Map;
 
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
 
@@ -118,6 +119,11 @@ public class SensorShell implements Shell {
   public void statechange(long resourceCheckSum, Map<String, String> keyValMap) throws Exception {
     this.shell.statechange(resourceCheckSum, keyValMap);
   }
+
+
+public void commitSnapshot(RevCommit commit) {
+	this.shell.commitSnapshot(commit);
+}
   
 
 

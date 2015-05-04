@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.restlet.Client;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
@@ -18,6 +19,7 @@ import org.restlet.data.Reference;
 import org.restlet.data.Request;
 import org.restlet.data.Response;
 import org.restlet.data.Status;
+import org.restlet.resource.ObjectRepresentation;
 import org.restlet.resource.Representation;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
@@ -304,6 +306,10 @@ public class SensorBaseClient {
 					+ data.timestamp + "&runtime=" + data.runtime + "&tool="
 					+ data.tool + "&sensorDataType=" + data.sensorDataType
 					+ "&uri=" + data.uri;
+			if(data.findProperty("CommitHash") != null)
+			{
+				requestString += "&commitHash=" + data.findProperty("CommitHash").value;
+			}
 			Response response = makeRequest(Method.GET, requestString, null);
 			if (!response.getStatus().isSuccess()) {
 				throw new SensorBaseClientException(response.getStatus());
@@ -387,5 +393,10 @@ public class SensorBaseClient {
 	 */
 	private static void setClientTimeout(Client client, int milliseconds) {
 		client.setConnectTimeout(milliseconds);
+	}
+
+	public void commitSnapshot(RevCommit commit) {
+		Representation rep = new ObjectRepresentation<RevCommit>(commit);
+		makeRequest(Method.PUT, this.webCatUrl + "/push", rep);
 	}
 }

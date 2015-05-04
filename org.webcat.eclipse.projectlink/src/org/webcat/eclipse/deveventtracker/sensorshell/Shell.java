@@ -2,6 +2,7 @@ package org.webcat.eclipse.deveventtracker.sensorshell;
 
 import java.util.Map;
 
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
 /**
@@ -62,6 +63,8 @@ public interface Shell {
    * @throws SensorShellException If problems occur sending the data.  
    */
   public int send() throws SensorShellException;
+  
+  public void commitSnapshot(RevCommit commit);
   
   /**
    * Invokes quit() on this Shell, which invokes a final send() and closes any
