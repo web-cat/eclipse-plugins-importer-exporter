@@ -9,7 +9,6 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import org.hackystat.utilities.home.HackystatUserHome;
 
 
 /**
@@ -34,7 +33,7 @@ public final class HackystatLogger {
 
     // Define a file handler that writes to the ~/.hackystat/logs directory, creating it if nec.
     String logSubDir = (subdir == null) ? ".hackystat/logs/" : ".hackystat/" + subdir + "/logs/";
-    File logDir = new File(HackystatUserHome.getHome(), logSubDir);
+    File logDir = new File("", logSubDir);
     boolean dirsOk = logDir.mkdirs();
     if (!dirsOk && !logDir.exists()) {
       throw new RuntimeException("mkdirs() failed");

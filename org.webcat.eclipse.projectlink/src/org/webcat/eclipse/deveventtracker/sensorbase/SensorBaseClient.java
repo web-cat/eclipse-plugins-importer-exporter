@@ -7,20 +7,26 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.UUID;
 
-import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRemoteException;
+import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.restlet.Client;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
 import org.restlet.data.Preference;
 import org.restlet.data.Protocol;
 import org.restlet.data.Reference;
-import org.restlet.data.Request;
-import org.restlet.data.Response;
+import org.restlet.Context;
+import org.restlet.Request;
+import org.restlet.Response;
 import org.restlet.data.Status;
-import org.restlet.resource.ObjectRepresentation;
-import org.restlet.resource.Representation;
+import org.restlet.representation.Representation;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
@@ -72,7 +78,7 @@ public class SensorBaseClient {
 		}
 		this.webCatUrl = this.webCatUrl + "wa/event/";
 
-		this.client = new Client(Protocol.HTTP);
+		this.client = new Client(new Context(), Protocol.HTTP);
 		setTimeout(getDefaultTimeout());
 	}
 
@@ -95,15 +101,7 @@ public class SensorBaseClient {
 	 * @return The default timeout.
 	 */
 	private static int getDefaultTimeout() {
-		String systemTimeout = System.getProperty(SENSORBASECLIENT_TIMEOUT_KEY,
-				"2000");
-		int timeout = 2000;
-		try {
-			timeout = Integer.parseInt(systemTimeout);
-		} catch (Exception e) {
-			timeout = 2000;
-		}
-		return timeout;
+		return 2000;
 	}
 
 	/**
@@ -154,8 +152,6 @@ public class SensorBaseClient {
 			return userUUID;
 		}
 	}
-	
-
 
 	public synchronized UUID retrieveStudentProject(String projectUri)
 			throws SensorBaseClientException {
@@ -221,18 +217,19 @@ public class SensorBaseClient {
 			return UUID.fromString(uuidString);
 		}
 	}
-	
+
 	/**
-	 * Parses out a UUID (in string form) from html text which contains the form:
-	 * "...elementName="uuid">UUID<..."
-	 * @param html The html string.
+	 * Parses out a UUID (in string form) from html text which contains the
+	 * form: "...elementName="uuid">UUID<..."
+	 * 
+	 * @param html
+	 *            The html string.
 	 * @return The String representation of a UUID embedded in the html.
 	 */
-	private String parseUUID(String html)
-	{
+	private String parseUUID(String html) {
 		int index = html.indexOf("=\"uuid\">");
 		int index2 = html.indexOf("<", index);
-		return html.substring(index+8, index2);
+		return html.substring(index + 8, index2);
 	}
 
 	/**
@@ -271,7 +268,8 @@ public class SensorBaseClient {
 			e.printStackTrace();
 		}
 		responseText = parseUUID(responseText);
-		if (responseText == null || responseText.equals("No user found for that email")
+		if (responseText == null
+				|| responseText.equals("No user found for that email")
 				|| responseText
 						.equals("No student project found for that UUID")
 				|| responseText.equals("Invalid SensorDataType")) {
@@ -306,9 +304,9 @@ public class SensorBaseClient {
 					+ data.timestamp + "&runtime=" + data.runtime + "&tool="
 					+ data.tool + "&sensorDataType=" + data.sensorDataType
 					+ "&uri=" + data.uri;
-			if(data.findProperty("CommitHash") != null)
-			{
-				requestString += "&commitHash=" + data.findProperty("CommitHash").value;
+			if (data.findProperty("CommitHash") != null) {
+				requestString += "&commitHash="
+						+ data.findProperty("CommitHash").value;
 			}
 			Response response = makeRequest(Method.GET, requestString, null);
 			if (!response.getStatus().isSuccess()) {
@@ -392,11 +390,54 @@ public class SensorBaseClient {
 	 *            The timeout value.
 	 */
 	private static void setClientTimeout(Client client, int milliseconds) {
-		client.setConnectTimeout(milliseconds);
+		client.getContext().getParameters()
+				.add("socketTimeout", new Integer(milliseconds).toString());
 	}
 
-	public void commitSnapshot(RevCommit commit) {
-		Representation rep = new ObjectRepresentation<RevCommit>(commit);
-		makeRequest(Method.PUT, this.webCatUrl + "/push", rep);
+	public void commitSnapshot(String projectUri, Git git) {
+		if (isPingable(getDefaultTimeout())) {
+			try {
+				String projectUUID = retrieveStudentProject(projectUri)
+						.toString();
+				git.push()
+						.setRemote(
+								webCatUrl + "git/StudentProject/" + projectUUID)
+						.setCredentialsProvider(
+								new UsernamePasswordCredentialsProvider(this
+										.retrieveUser(userEmail).toString(),
+										projectUUID)).call();
+			} catch (InvalidRemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (TransportException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (GitAPIException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (SensorBaseClientException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private boolean isPingable(int timeout) {
+
+		// We were unable to get the necessary information from the preference
+		// store, so store everything offline til we can send it.
+		if (webCatUrl.equals("dummyHost") || userEmail.equals("dummyUser")) {
+			return false;
+		}
+		try {
+			InetAddress inet = InetAddress.getByName(webCatUrl);
+			return inet.isReachable(timeout);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			return false;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 }

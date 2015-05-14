@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
@@ -183,7 +185,8 @@ public class MultiSensorShell implements Shell {
     return this.shells.get(0).getProperties();
   }
 
-public void commitSnapshot(RevCommit commit) {
-	this.shells.get(getCurrShellIndex()).commitSnapshot(commit);
-}
+  public void commitSnapshot(String projectUri, Git git)
+  {
+	  this.shells.get(getCurrShellIndex()).commitSnapshot(projectUri, git);
+  }
 }

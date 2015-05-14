@@ -4,12 +4,13 @@
 	<classpathentry exported="true" kind="lib" path="lib/jaxb-api.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jaxb-impl.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jsr173_1.0_api.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/sensorshell.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-api-1.7.12.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-simple-1.7.12.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/slf4j-api-1.7.12.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/slf4j-simple-1.7.12.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jsch-0.1.52.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/org.restlet.jar"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/J2SE-1.5"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/webcat-submitter-1.0.5.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/webcat-submitter-1.0.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

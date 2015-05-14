@@ -202,6 +202,8 @@ public class SensorShellProperties {
     setDefaultSensorShellProperties(true);
     this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_HOST_KEY, host);
     this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_USER_KEY, email);
+    this.sensorBaseHost = host;
+    this.user = email;
     validateProperties();
   }
   
@@ -211,6 +213,8 @@ public class SensorShellProperties {
     this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_HOST_KEY, host);
     this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_USER_KEY, email);
     this.sensorProps.putAll(props);
+    this.sensorBaseHost = host;
+    this.user = email;
     validateProperties();
   }
 

@@ -3,6 +3,8 @@ package org.webcat.eclipse.deveventtracker;
 import java.util.Map;
 
 import org.eclipse.jface.action.IStatusLineManager;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
@@ -28,6 +30,13 @@ public class SensorShellWrapper {
   private SensorShell shell;
 
   /**
+ * @return the shell
+ */
+public SensorShell getShell() {
+	return shell;
+}
+
+/**
    * Instantiates the eclipse specific sensor shell.
    * 
    * @param sensorShellProperties the SensorProperties instance.
@@ -38,9 +47,9 @@ public class SensorShellWrapper {
     this.shell = new SensorShell(sensorShellProperties, false, "Eclipse");
   }
   
-  public void commitSnapshot(RevCommit commit)
+  public void commitSnapshot(String projectUri, Git git)
   {
-	  shell.commitSnapshot(commit);
+	  shell.commitSnapshot(projectUri, git);
   }
   
   /**

@@ -3,6 +3,8 @@ package org.webcat.eclipse.deveventtracker.sensorshell.command;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.Properties;
 import org.webcat.eclipse.deveventtracker.sensorbase.Property;
@@ -281,7 +283,8 @@ public class SensorDataCommand extends Command {
     return freeMemory + (maxMemory - allocatedMemory);
   }
 
-public void commitSnapshot(RevCommit commit) {
-	client.commitSnapshot(commit);	
-}
+  public void commitSnapshot(String projectUri, Git git)
+  {
+	  client.commitSnapshot(projectUri, git);
+  }
 }

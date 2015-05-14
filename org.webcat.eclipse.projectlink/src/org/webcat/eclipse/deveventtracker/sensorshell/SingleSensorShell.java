@@ -16,6 +16,8 @@ import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Logger;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
@@ -564,7 +566,8 @@ public class SingleSensorShell implements Shell {
 		return this.sensorProperties;
 	}
 
-	public synchronized void commitSnapshot(RevCommit commit) {
-		this.sensorDataCommand.commitSnapshot(commit);
-	}
+	  public synchronized void commitSnapshot(String projectUri, Git git)
+	  {
+		  this.sensorDataCommand.commitSnapshot(projectUri, git);
+	  }
 }

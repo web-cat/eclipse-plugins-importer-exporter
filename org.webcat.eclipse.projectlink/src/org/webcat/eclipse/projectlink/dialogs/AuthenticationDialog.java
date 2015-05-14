@@ -165,6 +165,7 @@ public class AuthenticationDialog extends TitleAreaDialog
 		Activator.getDefault().setStoredUsername(getText(username));
 		Activator.getDefault().setLastEnteredPassword(getText(password));
 		remembersPassword = rememberPassword.getSelection();
+		
 
 		super.okPressed();
 	}

@@ -2,6 +2,8 @@ package org.webcat.eclipse.deveventtracker.sensorshell;
 
 import java.util.Map;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
@@ -64,7 +66,7 @@ public interface Shell {
    */
   public int send() throws SensorShellException;
   
-  public void commitSnapshot(RevCommit commit);
+  public void commitSnapshot(String projectUri, Git git);
   
   /**
    * Invokes quit() on this Shell, which invokes a final send() and closes any

@@ -18,7 +18,15 @@ Require-Bundle: org.eclipse.ui,
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
- lib/webcat-submitter-1.0.5.jar
+ lib/webcat-submitter-1.0.5.jar,
+ lib/activation.jar,
+ lib/jaxb-api.jar,
+ lib/jaxb-impl.jar,
+ lib/jsch-0.1.52.jar,
+ lib/jsr173_1.0_api.jar,
+ lib/org.restlet.jar,
+ lib/slf4j-api-1.7.12.jar,
+ lib/slf4j-simple-1.7.12.jar
 Export-Package: org.webcat.eclipse.projectlink.exporter,
  org.webcat.eclipse.projectlink.importer,
  org.webcat.eclipse.projectlink.importer.model,

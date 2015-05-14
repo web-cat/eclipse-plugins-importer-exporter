@@ -56,8 +56,7 @@ public class OfflineManager {
 		this.parentShell = shell;
 		this.properties = shell.getProperties();
 		this.tool = tool;
-		this.offlineDir = new File(ResourcesPlugin.getWorkspace().getRoot()
-				.getLocationURI().toString(), "/deveventtracker/offline");
+		this.offlineDir = new File(ResourcesPlugin.getWorkspace().getRoot().getLocationURI().getPath(), "/deveventtracker/offline/");
 		boolean dirOk = this.offlineDir.mkdirs();
 		if (!dirOk && !this.offlineDir.exists()) {
 			throw new RuntimeException("mkdirs failed");

@@ -3,6 +3,8 @@ package org.webcat.eclipse.deveventtracker.sensorshell;
 import java.io.File;
 import java.util.Map;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
@@ -32,8 +34,9 @@ public class SensorShell implements Shell {
 
   /** The underlying SingleSensorShell or MultiSensorShell. */
   private Shell shell = null;
-  
-  /**
+
+
+/**
    * Constructs a new SensorShell instance that can be provided with
    * notification data to be sent eventually to a specific user key and host.
    * The toolName field in the log file name is set to "interactive" if the tool
@@ -121,9 +124,10 @@ public class SensorShell implements Shell {
   }
 
 
-public void commitSnapshot(RevCommit commit) {
-	this.shell.commitSnapshot(commit);
-}
+  public void commitSnapshot(String projectUri, Git git)
+  {
+	  this.shell.commitSnapshot(projectUri, git);
+  }
   
 
 

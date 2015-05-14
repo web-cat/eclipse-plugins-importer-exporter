@@ -32,6 +32,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
+import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
 //--------------------------------------------------------------------------
@@ -53,8 +54,21 @@ public class Activator extends AbstractUIPlugin
 	private String lastEnteredPassword;
 	private String lastSubmittedAssignmentPath;
 	
+	private EclipseSensor devEventTrackerSensor;
+	
 
 
+	public Activator()
+	{
+		super();
+		plugin = this;
+		try {
+			devEventTrackerSensor = EclipseSensor.getInstance();
+		} catch (SensorShellException e) {
+			e.printStackTrace();
+		}
+		
+	}
 	// ----------------------------------------------------------
 	/*
 	 * (non-Javadoc)
@@ -64,7 +78,7 @@ public class Activator extends AbstractUIPlugin
 	{
 		super.start(context);
 		plugin = this;
-		EclipseSensor.getInstance();
+		devEventTrackerSensor = EclipseSensor.getInstance();
 	}
 
 
@@ -196,6 +210,13 @@ public class Activator extends AbstractUIPlugin
 	{
 		getPreferenceStore().setValue(
 				IPreferencesConstants.STORED_USERNAME, username);
+		
+		//TODO This probably shouldn't be here, but need to fix username whenever we get it (i.e. it's entered and set here)
+		try {
+			devEventTrackerSensor = EclipseSensor.getInstance();
+		} catch (SensorShellException e) {
+			e.printStackTrace();
+		}
 	}
 
 
