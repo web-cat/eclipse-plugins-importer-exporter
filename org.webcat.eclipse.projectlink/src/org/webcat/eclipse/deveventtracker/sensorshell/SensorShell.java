@@ -60,6 +60,7 @@ public class SensorShell implements Shell {
    */
   public SensorShell(SensorShellProperties properties, boolean isInteractive, String tool) {
     this(properties, isInteractive, tool, null);
+	System.out.println(properties.getSensorBaseHost() + ", " + properties.getSensorBaseUser());
   }
 
 

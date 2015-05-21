@@ -7,7 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.UUID;
 
@@ -138,12 +140,15 @@ public class SensorBaseClient {
 			e.printStackTrace();
 			return null;
 		}
+		System.out.println("retrieve user: " + responseText);
 		if (responseText == null
-				|| responseText.equals("No user found for that email")) {
+				|| !responseText.contains("<uuid>")) {
 			return null;
 		} else {
 			String uuidString = parseUUID(responseText);
+			System.out.println(uuidString);
 			UUID userUUID = UUID.fromString(uuidString);
+			System.out.println(userUUID.toString());
 			Activator
 					.getDefault()
 					.getPreferenceStore()
@@ -168,10 +173,10 @@ public class SensorBaseClient {
 					return projectUUID;
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
+			//e1.printStackTrace();
 		}
 
 		// Retrieve the stored user UUID from preferences, or from the server if
@@ -197,7 +202,7 @@ public class SensorBaseClient {
 			return null;
 		}
 		if (responseText == null
-				|| responseText.equals("No user found for that email")) {
+				|| !responseText.contains("<uuid>")) {
 			return null;
 		} else {
 			String uuidString = parseUUID(responseText);
@@ -206,13 +211,14 @@ public class SensorBaseClient {
 					+ "/projectUUID.txt");
 			FileWriter fw;
 			try {
+				System.out.println("studentproject storage file created: " + studentProjectUUIDFileToCreate.createNewFile());
 				fw = new FileWriter(studentProjectUUIDFileToCreate);
 				BufferedWriter out = new BufferedWriter(fw);
 				out.write(uuidString);
 				out.flush();
 				out.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 			return UUID.fromString(uuidString);
 		}
@@ -227,9 +233,9 @@ public class SensorBaseClient {
 	 * @return The String representation of a UUID embedded in the html.
 	 */
 	private String parseUUID(String html) {
-		int index = html.indexOf("=\"uuid\">");
-		int index2 = html.indexOf("<", index);
-		return html.substring(index + 8, index2);
+		
+		String afterOpen = html.split("<uuid>")[1];
+		return afterOpen.split("</uuid>")[0];
 	}
 
 	/**
@@ -257,6 +263,10 @@ public class SensorBaseClient {
 				+ data.timestamp + "&runtime=" + data.runtime + "&tool="
 				+ data.tool + "&sensorDataType=" + data.sensorDataType
 				+ "&uri=" + data.uri;
+		if(data.findProperty("CommitHash") != null)
+		{
+			requestString += "&CommitHash=" + data.findProperty("CommitHash");
+		}
 		Response response = makeRequest(Method.GET, requestString, null);
 		if (!response.getStatus().isSuccess()) {
 			throw new SensorBaseClientException(response.getStatus());
@@ -264,17 +274,11 @@ public class SensorBaseClient {
 		String responseText = "";
 		try {
 			responseText = response.getEntity().getText();
+			System.out.println(responseText);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		responseText = parseUUID(responseText);
-		if (responseText == null
-				|| responseText.equals("No user found for that email")
-				|| responseText
-						.equals("No student project found for that UUID")
-				|| responseText.equals("Invalid SensorDataType")) {
-			throw new SensorBaseClientException(responseText);
-		}
+
 	}
 
 	/**
@@ -315,15 +319,9 @@ public class SensorBaseClient {
 			String responseText = "";
 			try {
 				responseText = response.getEntity().getText();
+				System.out.println(responseText);
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
-			responseText = parseUUID(responseText);
-			if (responseText.equals("No user found for that email")
-					|| responseText
-							.equals("No student project found for that UUID")
-					|| responseText.equals("Invalid SensorDataType")) {
-				throw new SensorBaseClientException(responseText);
 			}
 		}
 	}
@@ -357,6 +355,7 @@ public class SensorBaseClient {
 	 */
 	private Response makeRequest(Method method, String requestString,
 			Representation entity) {
+		System.out.println("requesting from:" + this.webCatUrl + " with string: " + requestString);
 		Reference reference = new Reference(this.webCatUrl + requestString);
 		Request request = (entity == null) ? new Request(method, reference)
 				: new Request(method, reference, entity);
@@ -429,15 +428,20 @@ public class SensorBaseClient {
 		if (webCatUrl.equals("dummyHost") || userEmail.equals("dummyUser")) {
 			return false;
 		}
+
 		try {
-			InetAddress inet = InetAddress.getByName(webCatUrl);
-			return inet.isReachable(timeout);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-			return false;
-		} catch (IOException e) {
+			HttpURLConnection connection = (HttpURLConnection) new URL(webCatUrl)
+					.openConnection();
+			connection.setRequestMethod("HEAD");
+			int responseCode = connection.getResponseCode();
+			if (responseCode != 200) {
+				// Not OK.
+				return false;
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
 		}
+		return true;
 	}
 }

@@ -75,11 +75,18 @@ public class Messages extends NLS
 	public static String ExceptionDialog_Parse_Errors;
 	public static String ExceptionDialog_Title;
 	public static String ProjectLinkPreferencePage_Description;
+	public static String ProjectLinkPreferencePage_SubmissionTitle;
+	public static String ProjectLinkPreferencePage_DownloadTitle;
+	public static String ProjectLinkPreferencePage_SubmissionDescription;
+	public static String ProjectLinkPreferencePage_DownloadDescription;
 	public static String ProjectLinkPreferencePage_Download_URL;
 	public static String ProjectLinkPreferencePage_Submit_URL;
 	public static String ProjectLinkPreferencePage_Use_Separate_URLs;
 	public static String ProjectLinkPreferencePage_Use_WebCAT;
 	public static String ProjectLinkPreferencePage_WebCAT_URL;
+	public static String ProjectLinkPreferencePage_Email;
+	public static String ProjectLinkPreferencePage_Username;
+	public static String ProjectLinkPreferencePage_MailServer;
 	public static String SubmitAssignmentPage_ChangeUsernamePassword;
 	public static String SubmitAssignmentPage_Enter_Partners;
 	public static String SubmitAssignmentPage_EnterPartnerNames;

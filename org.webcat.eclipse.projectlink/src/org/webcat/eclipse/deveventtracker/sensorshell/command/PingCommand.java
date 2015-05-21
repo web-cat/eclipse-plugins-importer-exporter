@@ -1,8 +1,11 @@
 package org.webcat.eclipse.deveventtracker.sensorshell.command;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.URL;
 import java.net.UnknownHostException;
+
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.deveventtracker.sensorshell.SingleSensorShell;
 
@@ -53,20 +56,27 @@ public class PingCommand extends Command {
 	 * @return True if the server could be pinged.
 	 */
 	public boolean isPingable(int timeout) {
-		
-		// We were unable to get the necessary information from the preference store, so store everything offline til we can send it.
+
+		// We were unable to get the necessary information from the preference
+		// store, so store everything offline til we can send it.
 		if (this.host.equals("dummyHost") || this.email.equals("dummyUser")) {
 			return false;
 		}
+		//System.out.println("pinging with host: " + this.host + ", and email " + this.email);
+
 		try {
-			InetAddress inet = InetAddress.getByName(this.host);
-			return inet.isReachable(timeout);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-			return false;
-		} catch (IOException e) {
+			HttpURLConnection connection = (HttpURLConnection) new URL(host)
+					.openConnection();
+			connection.setRequestMethod("HEAD");
+			int responseCode = connection.getResponseCode();
+			if (responseCode != 200) {
+				// Not OK.
+				return false;
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
 		}
+		return true;
 	}
 }

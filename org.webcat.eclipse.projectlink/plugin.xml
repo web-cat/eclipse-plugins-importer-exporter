@@ -6,7 +6,7 @@
       <page
             class="org.webcat.eclipse.projectlink.preferences.ProjectLinkPreferencePage"
             id="org.webcat.eclipse.projectlink.preferencesPage"
-            name="Configured Assignments">
+            name="Web-CAT Assignments">
       </page>
    </extension>
    <extension

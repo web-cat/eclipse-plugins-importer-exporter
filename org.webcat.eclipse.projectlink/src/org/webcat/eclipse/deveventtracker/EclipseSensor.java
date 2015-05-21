@@ -222,6 +222,7 @@ public class EclipseSensor {
 	 */
 	public synchronized void hotDeploySensorShell() throws SensorShellException {
 		SensorShellProperties sensorShellProperties = buildProperties();
+		System.out.println(sensorShellProperties.getSensorBaseHost() + ", " + sensorShellProperties.getSensorBaseUser());
 		this.sensorShellWrapper = new SensorShellWrapper(sensorShellProperties);
 	}
 
@@ -237,8 +238,8 @@ public class EclipseSensor {
 		IPreferenceStore store = plugin.getPreferenceStore();
 
 		String host = store.getString(IPreferencesConstants.SUBMIT_URL);
-
-		String email = store.getString(IPreferencesConstants.STORED_USERNAME);
+		host = host.split("/wa/")[0];
+		String email = store.getString(IPreferencesConstants.STORED_EMAIL);
 
 		if (host == null || host.equals(""))
 		{
@@ -368,6 +369,7 @@ public class EclipseSensor {
 	 */
 	public void addDevEvent(String type, URI projectUri, URI fileResource,
 			Map<String, String> moreKeyValueMap, String message) {
+		System.out.println("addingDevEvent of type " + type + "in EclipseSensor for file " + fileResource.getPath());
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		keyValueMap.put("Tool", "Eclipse");
 		keyValueMap.put("SensorDataType", "DevEvent");
@@ -378,11 +380,11 @@ public class EclipseSensor {
 				new Long(System.currentTimeMillis()).toString());
 		keyValueMap.put("URI", "");
 		if (fileResource != null) {
-			keyValueMap.put("URI", fileResource.toString());
+			keyValueMap.put("URI", fileResource.getPath());
 		}
 		keyValueMap.put("ProjectURI", "");
 		if (projectUri != null) {
-			keyValueMap.put("ProjectURI", projectUri.toString());
+			keyValueMap.put("ProjectURI", projectUri.getPath());
 		}
 		if (moreKeyValueMap != null) {
 			keyValueMap.putAll(moreKeyValueMap);
@@ -651,7 +653,14 @@ public class EclipseSensor {
 				IFileEditorInput input = (IFileEditorInput) editorInput;
 				IFile file = input.getFile();
 				if (file != null) {
-					return file.getProject().getLocationURI();
+					System.out.println(file.getProject().getLocationURI());
+					try {
+						return file.getProject().getDescription().getLocationURI();
+					} catch (CoreException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						return URI.create("file:///Unknown");
+					}
 				}
 			}
 		}
@@ -1066,10 +1075,7 @@ public class EclipseSensor {
 		 *            A resource change event to describe changes to resources.
 		 */
 		public void resourceChanged(IResourceChangeEvent event) {
-			System.out.println("resource changed");
 			if (((event.getType() & IResourceChangeEvent.POST_CHANGE) != 0)) {
-
-				System.out.println(event.getType());
 				// ||
 				// ((event.getType() & IResourceChangeEvent.POST_AUTO_BUILD) !=
 				// 0)) {
@@ -1240,7 +1246,6 @@ public class EclipseSensor {
 		}
 		try {
 			Git git = Git.init().setDirectory(localRepoDir).call();
-			System.out.println(git.getRepository().getDirectory().getPath());
 			// Add all files in the project directory if they aren't already
 			git.add().addFilepattern(".").call();
 

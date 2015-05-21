@@ -74,6 +74,12 @@ public interface IPreferencesConstants
 			+ ".preferences.username";
 
 
+	public static final String STORED_EMAIL = Activator.PLUGIN_ID
+			+ ".preferences.email";
+	
+	public static final String OUTGOING_MAIL_SERVER = Activator.PLUGIN_ID
+			+ ".preferences.mail_server";
+
 	public static final String IMPORTED_PREFERENCES = Activator.PLUGIN_ID
 			+ ".preferences.imported_preferences";
 
@@ -91,4 +97,6 @@ public interface IPreferencesConstants
 	
 	public static final String OFFLINE_STORAGE_DIRECTORY = Activator.PLUGIN_ID
 			+ ".preferences.offline_storage_dir";
+
+
 }

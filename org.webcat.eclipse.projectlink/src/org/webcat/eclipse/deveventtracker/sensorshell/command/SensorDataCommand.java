@@ -57,7 +57,8 @@ public class SensorDataCommand extends Command {
    * @throws SensorShellException If problems occur sending the data. 
    */
   public int send() throws SensorShellException {
-    
+    System.out.println("sending in sendcommand");
+    System.out.println("with host: " + this.host);
     int numDataSent = 0;
 
     // Return right away if there is no data to send
@@ -71,6 +72,7 @@ public class SensorDataCommand extends Command {
     
     // Do a ping to see that we can connect to the server. 
     if (this.pingCommand.isPingable()) {
+    	System.out.println("pingable");
       // We can connect, and there is data, so attempt to send.
       try {
         this.shell.println("Attempting to send " + sensorDatas.getSensorData().size() 
@@ -90,6 +92,7 @@ public class SensorDataCommand extends Command {
         throw new SensorShellException("Could not send data: error in SensorBaseClient", e);
       }
     }
+	System.out.println("not pingable");
 
     // If we got here, then the server was not available.
     if (this.properties.isOfflineCacheEnabled()) {

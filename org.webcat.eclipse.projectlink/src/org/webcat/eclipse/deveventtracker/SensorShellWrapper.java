@@ -44,6 +44,7 @@ public SensorShell getShell() {
    * @throws SensorShellException If error occurs in instantiating the sensorshell.
    */
   SensorShellWrapper(SensorShellProperties sensorShellProperties) throws SensorShellException {
+		System.out.println(sensorShellProperties.getSensorBaseHost() + ", " + sensorShellProperties.getSensorBaseUser());
     this.shell = new SensorShell(sensorShellProperties, false, "Eclipse");
   }
   

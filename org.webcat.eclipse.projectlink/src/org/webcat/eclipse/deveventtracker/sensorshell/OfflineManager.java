@@ -150,8 +150,21 @@ public class OfflineManager {
 				SensorShellProperties.SENSORSHELL_AUTOSEND_TIMEINTERVAL_KEY,
 				"0.0");
 		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		String host = store.getString(IPreferencesConstants.WEBCAT_URL);
-		String email = store.getString(IPreferencesConstants.STORED_USERNAME);
+		
+		String host = store.getString(IPreferencesConstants.SUBMIT_URL);
+		host = host.split("/wa/")[0];
+		String email = store.getString(IPreferencesConstants.STORED_EMAIL);
+
+		if (host == null || host.equals(""))
+		{
+			host = "dummyHost";
+		}
+		if (email == null || email.equals(""))
+		{
+			email = "dummyUser";
+		}
+		
+		
 		SensorShellProperties shellProps = new SensorShellProperties(props,
 				host, email);
 		// Provide a separate log file for this offline recovery.
@@ -183,15 +196,17 @@ public class OfflineManager {
 				shell.println("Successfully sent: " + numSent + " instances.");
 				// If all the data was successfully sent, then we delete the
 				// file.
+				fileStream.close();
+				System.out.println(numSent + " sent out of " + sensorDatas.getSensorData().size());
 				if (numSent == sensorDatas.getSensorData().size()) {
 					boolean isDeleted = xmlFiles[i].delete();
+					System.out.println(xmlFiles[i].getName() + " was deleted: " + isDeleted);
 					shell.println("Trying to delete " + xmlFiles[i].getName()
 							+ ". Success: " + isDeleted);
 				} else {
 					shell.println("Did not send all instances. " + xmlFiles[i]
 							+ " not deleted.");
 				}
-				fileStream.close();
 			} catch (Exception e) {
 				shell.println("Error recovering data from: " + xmlFiles[i]);
 				try {
