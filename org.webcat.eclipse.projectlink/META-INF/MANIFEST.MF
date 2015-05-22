@@ -13,8 +13,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt,
  org.eclipse.jdt.core,
  org.eclipse.jface.text,
- org.eclipse.ui.workbench.texteditor,
- org.eclipse.jgit
+ org.eclipse.ui.workbench.texteditor
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
@@ -26,7 +25,8 @@ Bundle-ClassPath: .,
  lib/jsr173_1.0_api.jar,
  lib/org.restlet.jar,
  lib/slf4j-api-1.7.12.jar,
- lib/slf4j-simple-1.7.12.jar
+ lib/slf4j-simple-1.7.12.jar,
+ lib/org.eclipse.jgit-3.7.1.201504261725-r.jar
 Export-Package: org.webcat.eclipse.projectlink.exporter,
  org.webcat.eclipse.projectlink.importer,
  org.webcat.eclipse.projectlink.importer.model,

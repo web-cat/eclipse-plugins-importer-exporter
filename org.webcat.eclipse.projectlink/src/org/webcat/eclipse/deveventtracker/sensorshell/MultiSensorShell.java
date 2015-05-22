@@ -185,8 +185,8 @@ public class MultiSensorShell implements Shell {
     return this.shells.get(0).getProperties();
   }
 
-  public void commitSnapshot(String projectUri, Git git)
+  public void commitSnapshot(String projectUri, Git git, boolean needsPull)
   {
-	  this.shells.get(getCurrShellIndex()).commitSnapshot(projectUri, git);
+	  this.shells.get(getCurrShellIndex()).commitSnapshot(projectUri, git, needsPull);
   }
 }

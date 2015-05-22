@@ -44,13 +44,12 @@ public SensorShell getShell() {
    * @throws SensorShellException If error occurs in instantiating the sensorshell.
    */
   SensorShellWrapper(SensorShellProperties sensorShellProperties) throws SensorShellException {
-		System.out.println(sensorShellProperties.getSensorBaseHost() + ", " + sensorShellProperties.getSensorBaseUser());
-    this.shell = new SensorShell(sensorShellProperties, false, "Eclipse");
+	this.shell = new SensorShell(sensorShellProperties, false, "Eclipse");
   }
   
-  public void commitSnapshot(String projectUri, Git git)
+  public void commitSnapshot(String projectUri, Git git, boolean needsPull)
   {
-	  shell.commitSnapshot(projectUri, git);
+	  shell.commitSnapshot(projectUri, git, needsPull);
   }
   
   /**

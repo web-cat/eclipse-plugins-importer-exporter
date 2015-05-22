@@ -566,8 +566,8 @@ public class SingleSensorShell implements Shell {
 		return this.sensorProperties;
 	}
 
-	  public synchronized void commitSnapshot(String projectUri, Git git)
+	  public synchronized void commitSnapshot(String projectUri, Git git, boolean needsPull)
 	  {
-		  this.sensorDataCommand.commitSnapshot(projectUri, git);
+		  this.sensorDataCommand.commitSnapshot(projectUri, git, needsPull);
 	  }
 }

@@ -197,7 +197,6 @@ public class OfflineManager {
 				// If all the data was successfully sent, then we delete the
 				// file.
 				fileStream.close();
-				System.out.println(numSent + " sent out of " + sensorDatas.getSensorData().size());
 				if (numSent == sensorDatas.getSensorData().size()) {
 					boolean isDeleted = xmlFiles[i].delete();
 					System.out.println(xmlFiles[i].getName() + " was deleted: " + isDeleted);

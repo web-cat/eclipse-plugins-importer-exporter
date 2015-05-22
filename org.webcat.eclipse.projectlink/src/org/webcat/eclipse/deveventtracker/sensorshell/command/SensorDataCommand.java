@@ -286,8 +286,8 @@ public class SensorDataCommand extends Command {
     return freeMemory + (maxMemory - allocatedMemory);
   }
 
-  public void commitSnapshot(String projectUri, Git git)
+  public void commitSnapshot(String projectUri, Git git, boolean needsPull)
   {
-	  client.commitSnapshot(projectUri, git);
+	  client.commitSnapshot(projectUri, git, needsPull);
   }
 }

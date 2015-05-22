@@ -11,12 +11,16 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.UUID;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.restlet.Client;
 import org.restlet.data.MediaType;
@@ -128,6 +132,14 @@ public class SensorBaseClient {
 	 */
 	public synchronized UUID retrieveUser(String email)
 			throws SensorBaseClientException {
+		// Check preferences first
+		String uuidStringFromPref = Activator.getDefault().getPreferenceStore()
+				.getString(IPreferencesConstants.STORED_USER_UUID);
+		if (uuidStringFromPref != null && uuidStringFromPref != "") {
+			return UUID.fromString(uuidStringFromPref);
+		}
+
+		// If not in preferences, retrieve from server.
 		Response response = makeRequest(Method.GET, "retrieveUser?email="
 				+ email, null);
 		if (!response.getStatus().isSuccess()) {
@@ -140,21 +152,16 @@ public class SensorBaseClient {
 			e.printStackTrace();
 			return null;
 		}
-		System.out.println("retrieve user: " + responseText);
-		if (responseText == null
-				|| !responseText.contains("<uuid>")) {
+		if (responseText == null || !responseText.contains("<uuid>")) {
 			return null;
 		} else {
 			String uuidString = parseUUID(responseText);
-			System.out.println(uuidString);
-			UUID userUUID = UUID.fromString(uuidString);
-			System.out.println(userUUID.toString());
 			Activator
 					.getDefault()
 					.getPreferenceStore()
 					.setValue(IPreferencesConstants.STORED_USER_UUID,
-							userUUID.toString());
-			return userUUID;
+							uuidString);
+			return UUID.fromString(uuidString);
 		}
 	}
 
@@ -164,28 +171,28 @@ public class SensorBaseClient {
 		// UUID.
 		UUID projectUUID;
 		try {
-			FileReader fr = new FileReader(projectUri + "/projectUUID.uuid");
+			FileReader fr = new FileReader(projectUri + "/projectUUID.txt");
 			BufferedReader br = new BufferedReader(fr);
 			try {
 				projectUUID = UUID.fromString(br.readLine());
 				br.close();
+				fr.close();
 				if (projectUUID != null) {
 					return projectUUID;
 				}
 			} catch (IOException e) {
-				//e.printStackTrace();
+				e.printStackTrace();
 			}
 		} catch (FileNotFoundException e1) {
-			//e1.printStackTrace();
+			// e1.printStackTrace();
 		}
+
+		// We don't have the UUID in the file system, so retrieve it from the
+		// server.
 
 		// Retrieve the stored user UUID from preferences, or from the server if
 		// not present.
-		String userUUID = Activator.getDefault().getPreferenceStore()
-				.getString(IPreferencesConstants.STORED_USER_UUID);
-		if (userUUID.equals("")) {
-			userUUID = retrieveUser(userEmail).toString();
-		}
+		String userUUID = retrieveUser(userEmail).toString();
 
 		// Ask the server for the studentProject UUID.
 		String requestString = "retrieveStudentProject?projectUri="
@@ -201,8 +208,7 @@ public class SensorBaseClient {
 			e.printStackTrace();
 			return null;
 		}
-		if (responseText == null
-				|| !responseText.contains("<uuid>")) {
+		if (responseText == null || !responseText.contains("<uuid>")) {
 			return null;
 		} else {
 			String uuidString = parseUUID(responseText);
@@ -211,14 +217,14 @@ public class SensorBaseClient {
 					+ "/projectUUID.txt");
 			FileWriter fw;
 			try {
-				System.out.println("studentproject storage file created: " + studentProjectUUIDFileToCreate.createNewFile());
 				fw = new FileWriter(studentProjectUUIDFileToCreate);
 				BufferedWriter out = new BufferedWriter(fw);
 				out.write(uuidString);
 				out.flush();
+				fw.close();
 				out.close();
 			} catch (IOException e) {
-				//e.printStackTrace();
+				// e.printStackTrace();
 			}
 			return UUID.fromString(uuidString);
 		}
@@ -233,7 +239,7 @@ public class SensorBaseClient {
 	 * @return The String representation of a UUID embedded in the html.
 	 */
 	private String parseUUID(String html) {
-		
+
 		String afterOpen = html.split("<uuid>")[1];
 		return afterOpen.split("</uuid>")[0];
 	}
@@ -250,11 +256,8 @@ public class SensorBaseClient {
 			throws SensorBaseClientException {
 		// Retrieve the stored user UUID from preferences, or from the server if
 		// not present.
-		String userUUID = Activator.getDefault().getPreferenceStore()
-				.getString(IPreferencesConstants.STORED_USER_UUID);
-		if (userUUID.equals("")) {
-			userUUID = retrieveUser(userEmail).toString();
-		}
+		String userUUID = retrieveUser(userEmail).toString();
+
 		String studentProjectUUID = retrieveStudentProject(data.getProjectUri())
 				.toString();
 
@@ -263,8 +266,7 @@ public class SensorBaseClient {
 				+ data.timestamp + "&runtime=" + data.runtime + "&tool="
 				+ data.tool + "&sensorDataType=" + data.sensorDataType
 				+ "&uri=" + data.uri;
-		if(data.findProperty("CommitHash") != null)
-		{
+		if (data.findProperty("CommitHash") != null) {
 			requestString += "&CommitHash=" + data.findProperty("CommitHash");
 		}
 		Response response = makeRequest(Method.GET, requestString, null);
@@ -274,7 +276,6 @@ public class SensorBaseClient {
 		String responseText = "";
 		try {
 			responseText = response.getEntity().getText();
-			System.out.println(responseText);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -294,11 +295,7 @@ public class SensorBaseClient {
 			throws SensorBaseClientException {
 		// Retrieve the stored user UUID from preferences, or from the server if
 		// not present.
-		String userUUID = Activator.getDefault().getPreferenceStore()
-				.getString(IPreferencesConstants.STORED_USER_UUID);
-		if (userUUID.equals("")) {
-			userUUID = retrieveUser(userEmail).toString();
-		}
+		String userUUID = retrieveUser(userEmail).toString();
 
 		for (SensorData data : batch.sensorData) {
 			String studentProjectUUID = retrieveStudentProject(
@@ -319,7 +316,6 @@ public class SensorBaseClient {
 			String responseText = "";
 			try {
 				responseText = response.getEntity().getText();
-				System.out.println(responseText);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -355,7 +351,8 @@ public class SensorBaseClient {
 	 */
 	private Response makeRequest(Method method, String requestString,
 			Representation entity) {
-		System.out.println("requesting from:" + this.webCatUrl + " with string: " + requestString);
+		System.out.println("requesting from:" + this.webCatUrl
+				+ " with string: " + requestString);
 		Reference reference = new Reference(this.webCatUrl + requestString);
 		Request request = (entity == null) ? new Request(method, reference)
 				: new Request(method, reference, entity);
@@ -393,30 +390,69 @@ public class SensorBaseClient {
 				.add("socketTimeout", new Integer(milliseconds).toString());
 	}
 
-	public void commitSnapshot(String projectUri, Git git) {
+	public void commitSnapshot(String projectUri, Git git, boolean needsPull) {
+		System.out.println("attempting to push from project " + projectUri + " in sensorbaseclient");
 		if (isPingable(getDefaultTimeout())) {
 			try {
 				String projectUUID = retrieveStudentProject(projectUri)
 						.toString();
-				git.push()
-						.setRemote(
-								webCatUrl + "git/StudentProject/" + projectUUID)
-						.setCredentialsProvider(
-								new UsernamePasswordCredentialsProvider(this
-										.retrieveUser(userEmail).toString(),
-										projectUUID)).call();
+
+				String gitUrl = webCatUrl.split("/wa/")[0]
+						+ "/git/StudentProject/" + projectUUID;
+
+				StoredConfig config = git.getRepository().getConfig();
+				config.setString("remote", "origin", "url", gitUrl);
+				config.setString("remote", "origin", "fetch", "+refs/heads/*:refs/remotes/origin/*");
+				config.save();
+				// Real credential call params
+				// this.retrieveUser(userEmail).toString(),projectUUID
+				// TODO only for testing
+				UsernamePasswordCredentialsProvider cred = new UsernamePasswordCredentialsProvider(
+						"admin", "password");
+
+				System.out.println(gitUrl);
+
+				// Pull files from server if this is the first time we've used
+				// this repository.
+				if (needsPull) {
+					System.out.println("pulling first");
+					PullResult pullResult = git.pull().setCredentialsProvider(cred).call();
+					System.out.println("fetch result: " + pullResult.getFetchResult() + " \n merge result: " + pullResult.getMergeResult());
+					// Update .gitignore file to include /bin directory
+					File gitignore = new File(projectUri, "/.gitignore");
+					FileWriter fw;
+					try {
+						fw = new FileWriter(gitignore, true);
+						BufferedWriter out = new BufferedWriter(fw);
+						out.write("/bin/");
+						out.newLine();
+						out.write("projectUUID.txt");
+						out.newLine();
+						out.flush();
+						out.close();
+						fw.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+				}
+				Iterable<PushResult> pushResults = git.push().setCredentialsProvider(cred).call();
+				System.out.println("push results:");
+				for (PushResult r : pushResults)
+				{
+					System.out.println(r.getMessages());
+					System.out.println(r.toString());
+				}
 			} catch (InvalidRemoteException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (TransportException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (GitAPIException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (SensorBaseClientException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (IOException e1) {
+				e1.printStackTrace();
 			}
 		}
 	}
@@ -430,8 +466,8 @@ public class SensorBaseClient {
 		}
 
 		try {
-			HttpURLConnection connection = (HttpURLConnection) new URL(webCatUrl)
-					.openConnection();
+			HttpURLConnection connection = (HttpURLConnection) new URL(
+					webCatUrl).openConnection();
 			connection.setRequestMethod("HEAD");
 			int responseCode = connection.getResponseCode();
 			if (responseCode != 200) {

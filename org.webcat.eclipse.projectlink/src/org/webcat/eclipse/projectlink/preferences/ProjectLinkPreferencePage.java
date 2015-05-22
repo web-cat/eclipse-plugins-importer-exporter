@@ -29,6 +29,7 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
@@ -75,31 +76,33 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLayout(new FormLayout());
 
-		//Submission subtitle
-		Label lblElectronicSubmissionSubtitle = new Label(composite, SWT.BOLD);
-		lblElectronicSubmissionSubtitle.setText(Messages.ProjectLinkPreferencePage_SubmissionTitle);
-		FormData fd_lblElectronicSubmissionSubtitle= new FormData();
-		fd_lblElectronicSubmissionSubtitle.left = new FormAttachment(0);
-		fd_lblElectronicSubmissionSubtitle.top = new FormAttachment(0, 10);
-		lblElectronicSubmissionSubtitle.setLayoutData(fd_lblElectronicSubmissionSubtitle);
+		Group submissionGroup = new Group(composite, SWT.SHADOW_NONE);
+		submissionGroup.setText(Messages.ProjectLinkPreferencePage_SubmissionTitle);
+		FormData fd_submissionGroup = new FormData();
+		fd_submissionGroup.left = new FormAttachment(0);
+		fd_submissionGroup.top = new FormAttachment(0);
+		fd_submissionGroup.right = new FormAttachment(100, -10);
+		submissionGroup.setLayout(new FormLayout());
+		submissionGroup.setLayoutData(fd_submissionGroup);
+		
 		
 		//Submission description
-		Label lblElectronicSubmissionDesc = new Label(composite, SWT.NONE);
+		Label lblElectronicSubmissionDesc = new Label(submissionGroup, SWT.NONE);
 		lblElectronicSubmissionDesc.setText(Messages.ProjectLinkPreferencePage_SubmissionDescription);
-		FormData fd_lblElectronicSubmissionDesc= new FormData();
+		FormData fd_lblElectronicSubmissionDesc = new FormData();
 		fd_lblElectronicSubmissionDesc.left = new FormAttachment(0);
-		fd_lblElectronicSubmissionDesc.top = new FormAttachment(lblElectronicSubmissionSubtitle, 14);
+		fd_lblElectronicSubmissionDesc.top = new FormAttachment(0);
 		lblElectronicSubmissionDesc.setLayoutData(fd_lblElectronicSubmissionDesc);
 		
 		//Submission label
-		Label lblSubmitUrl = new Label(composite, SWT.NONE);
+		Label lblSubmitUrl = new Label(submissionGroup, SWT.NONE);
 		lblSubmitUrl.setText(Messages.ProjectLinkPreferencePage_Submit_URL);
 		FormData fd_lblSubmitUrl = new FormData();
 		fd_lblSubmitUrl.left = new FormAttachment(0);
 		lblSubmitUrl.setLayoutData(fd_lblSubmitUrl);
 
 		//Submission field
-		submissionDefinitionURL = new Text(composite, SWT.BORDER);
+		submissionDefinitionURL = new Text(submissionGroup, SWT.BORDER);
 		fd_lblSubmitUrl.top = new FormAttachment(submissionDefinitionURL, 3,
 				SWT.TOP);
 		FormData fd_submitURL = new FormData();
@@ -108,14 +111,14 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 		submissionDefinitionURL.setLayoutData(fd_submitURL);
 
 		//Email label
-		Label lblEmail = new Label(composite, SWT.NONE);
+		Label lblEmail = new Label(submissionGroup, SWT.NONE);
 		lblEmail.setText(Messages.ProjectLinkPreferencePage_Email);
 		FormData fd_lblEmail = new FormData();
 		fd_lblEmail.left = new FormAttachment(0);
 		lblEmail.setLayoutData(fd_lblEmail);
 		
 		//Email field
-		email = new Text(composite, SWT.BORDER);
+		email = new Text(submissionGroup, SWT.BORDER);
 		fd_lblEmail.top = new FormAttachment(email, 3,
 				SWT.TOP);
 		FormData fd_email = new FormData();
@@ -124,14 +127,14 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 		email.setLayoutData(fd_email);
 
 		//Username label
-		Label lblUsername = new Label(composite, SWT.NONE);
+		Label lblUsername = new Label(submissionGroup, SWT.NONE);
 		lblUsername.setText(Messages.ProjectLinkPreferencePage_Username);
 		FormData fd_lblUsername = new FormData();
 		fd_lblUsername.left = new FormAttachment(0);
 		lblUsername.setLayoutData(fd_lblUsername);
 		
 		//Username field
-		username = new Text(composite, SWT.BORDER);
+		username = new Text(submissionGroup, SWT.BORDER);
 		fd_lblUsername.top = new FormAttachment(username, 3,
 				SWT.TOP);
 		FormData fd_username = new FormData();
@@ -140,14 +143,14 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 		username.setLayoutData(fd_username);
 
 		//Mail Server label
-		Label lblMailServer = new Label(composite, SWT.NONE);
+		Label lblMailServer = new Label(submissionGroup, SWT.NONE);
 		lblMailServer.setText(Messages.ProjectLinkPreferencePage_MailServer);
 		FormData fd_lblMailServer = new FormData();
 		fd_lblMailServer.left = new FormAttachment(0);
 		lblMailServer.setLayoutData(fd_lblMailServer);
 		
 		//Mail Server field
-		mailServer = new Text(composite, SWT.BORDER);
+		mailServer = new Text(submissionGroup, SWT.BORDER);
 		fd_lblMailServer.top = new FormAttachment(mailServer, 3,
 				SWT.TOP);
 
@@ -162,24 +165,26 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 		mailServer.setLayoutData(fd_mailServer);
 		
 		
-		//Download subtitle
-		Label lblDownloadSubtitle = new Label(composite, SWT.BOLD);
-		lblDownloadSubtitle.setText(Messages.ProjectLinkPreferencePage_DownloadTitle);
-		FormData fd_lblDownloadSubtitle= new FormData();
-		fd_lblDownloadSubtitle.left = new FormAttachment(0);
-		fd_lblDownloadSubtitle.top = new FormAttachment(mailServer, 14);
-		lblDownloadSubtitle.setLayoutData(fd_lblDownloadSubtitle);
+		Group downloadGroup = new Group(composite, SWT.SHADOW_NONE);
+		downloadGroup.setText(Messages.ProjectLinkPreferencePage_DownloadTitle);
+		FormData fd_downloadGroup = new FormData();
+		fd_downloadGroup.top = new FormAttachment(submissionGroup, 20);
+		fd_downloadGroup.left = new FormAttachment(0);
+		fd_downloadGroup.right = new FormAttachment(100, -10);
+		downloadGroup.setLayout(new FormLayout());
+		downloadGroup.setLayoutData(fd_downloadGroup);
+		
 		
 		//Download description
-		Label lblDownloadDesc = new Label(composite, SWT.NONE);
+		Label lblDownloadDesc = new Label(downloadGroup, SWT.NONE);
 		lblDownloadDesc.setText(Messages.ProjectLinkPreferencePage_DownloadDescription);
 		FormData fd_lblDownloadDesc= new FormData();
 		fd_lblDownloadDesc.left = new FormAttachment(0);
-		fd_lblDownloadDesc.top = new FormAttachment(lblDownloadSubtitle, 14);
+		fd_lblDownloadDesc.top = new FormAttachment(0);
 		lblDownloadDesc.setLayoutData(fd_lblDownloadDesc);
 
 		//Download URL label
-		Label lblDownloadUrl = new Label(composite, SWT.NONE);
+		Label lblDownloadUrl = new Label(downloadGroup, SWT.NONE);
 		lblDownloadUrl.setText(Messages.ProjectLinkPreferencePage_Download_URL);
 		FormData fd_lblDownloadUrl = new FormData();
 		fd_lblDownloadUrl.left = new FormAttachment(0);
@@ -187,14 +192,14 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 
 		
 		//Download URL field
-		downloadURL = new Text(composite, SWT.BORDER);
+		downloadURL = new Text(downloadGroup, SWT.BORDER);
 		fd_lblDownloadUrl.top = new FormAttachment(downloadURL, 3, SWT.TOP);
 		FormData fd_downloadURL = new FormData();
 		fd_downloadURL.top = new FormAttachment(lblDownloadDesc, 14);
-		fd_downloadURL.left = new FormAttachment(mailServer, 0, SWT.LEFT);
+		fd_downloadURL.left = new FormAttachment(lblDownloadUrl, 10);
 		fd_downloadURL.right = new FormAttachment(100, -10);
 		downloadURL.setLayoutData(fd_downloadURL);
-
+		
 		setText(submissionDefinitionURL,
 				getPreferenceStore()
 						.getString(IPreferencesConstants.SUBMIT_URL));
@@ -227,13 +232,24 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 	// ----------------------------------------------------------
 	@Override
 	public boolean performOk() {
-		// getPreferenceStore().setValue(IPreferencesConstants.WEBCAT_URL,
-		// getText(webCatURL));
+		
+		
+		//TODO validation on URLS (Use URL class)
+		
 		getPreferenceStore().setValue(IPreferencesConstants.DOWNLOAD_URL,
 				getText(downloadURL));
 		getPreferenceStore().setValue(IPreferencesConstants.SUBMIT_URL,
 				getText(submissionDefinitionURL));
+		getPreferenceStore().setValue(IPreferencesConstants.STORED_EMAIL,
+				getText(email));
+		getPreferenceStore().setValue(IPreferencesConstants.STORED_USERNAME,
+				getText(username));
+		getPreferenceStore().setValue(IPreferencesConstants.OUTGOING_MAIL_SERVER,
+				getText(mailServer));
 
+
+		// getPreferenceStore().setValue(IPreferencesConstants.WEBCAT_URL,
+		// getText(webCatURL));
 		// if (useSeparateURLs.getSelection())
 		{
 			getPreferenceStore().setValue(IPreferencesConstants.URL_TYPE,

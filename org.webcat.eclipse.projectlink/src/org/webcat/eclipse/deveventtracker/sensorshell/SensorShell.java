@@ -125,9 +125,9 @@ public class SensorShell implements Shell {
   }
 
 
-  public void commitSnapshot(String projectUri, Git git)
+  public void commitSnapshot(String projectUri, Git git, boolean needsPull)
   {
-	  this.shell.commitSnapshot(projectUri, git);
+	  this.shell.commitSnapshot(projectUri, git, needsPull);
   }
   
 

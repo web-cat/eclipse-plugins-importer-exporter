@@ -66,7 +66,7 @@ public interface Shell {
    */
   public int send() throws SensorShellException;
   
-  public void commitSnapshot(String projectUri, Git git);
+  public void commitSnapshot(String projectUri, Git git, boolean needsPull);
   
   /**
    * Invokes quit() on this Shell, which invokes a final send() and closes any

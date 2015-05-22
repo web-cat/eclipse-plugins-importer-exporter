@@ -8,13 +8,11 @@ import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CUR
 import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_METHODS;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -64,7 +62,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
  * Provides all the necessary sensor initialization and collects data in this
@@ -174,7 +171,7 @@ public class EclipseSensor {
 		this.timer = new Timer();
 		this.stateChangeTimerTask = new StateChangeTimerTask();
 		this.buffTransTimerTask = new BuffTransTimertask();
-		
+
 		// Load sensor's setting.
 		this.hotDeploySensorShell();
 
@@ -187,8 +184,9 @@ public class EclipseSensor {
 		// for piemontese sensor because this listener is used in piemontese
 		// sensor even though
 		// the main sensor.properties does not exist in the <hackystat_home>.
-		
-		workspace.addResourceChangeListener(new ResourceChangeAdapter(), IResourceChangeEvent.POST_CHANGE);
+
+		workspace.addResourceChangeListener(new ResourceChangeAdapter(),
+				IResourceChangeEvent.POST_CHANGE);
 
 		// Adds element changed listener to get the corresponding change of
 		// refactoring.
@@ -196,11 +194,11 @@ public class EclipseSensor {
 
 		initialize();
 	}
-	
+
 	/**
 	 * Returns the (singleton) EclipseSensor instance. This method is initially
 	 * called by EclipseSensorPlugin client class for instantiation.
-	 *
+	 * 
 	 * @return The (singleton) instance.
 	 * @throws SensorShellException
 	 *             If problem occurred in instantiating the sensor.
@@ -222,7 +220,6 @@ public class EclipseSensor {
 	 */
 	public synchronized void hotDeploySensorShell() throws SensorShellException {
 		SensorShellProperties sensorShellProperties = buildProperties();
-		System.out.println(sensorShellProperties.getSensorBaseHost() + ", " + sensorShellProperties.getSensorBaseUser());
 		this.sensorShellWrapper = new SensorShellWrapper(sensorShellProperties);
 	}
 
@@ -241,12 +238,10 @@ public class EclipseSensor {
 		host = host.split("/wa/")[0];
 		String email = store.getString(IPreferencesConstants.STORED_EMAIL);
 
-		if (host == null || host.equals(""))
-		{
+		if (host == null || host.equals("")) {
 			host = "dummyHost";
 		}
-		if (email == null || email.equals(""))
-		{
+		if (email == null || email.equals("")) {
 			email = "dummyUser";
 		}
 		SensorShellProperties sensorShellProperties = new SensorShellProperties(
@@ -369,7 +364,13 @@ public class EclipseSensor {
 	 */
 	public void addDevEvent(String type, URI projectUri, URI fileResource,
 			Map<String, String> moreKeyValueMap, String message) {
-		System.out.println("addingDevEvent of type " + type + "in EclipseSensor for file " + fileResource.getPath());
+		// Sometimes projectUri is null when registering listeners, these are
+		// not events we want to track.
+		if (projectUri == null) {
+			return;
+		}
+		System.out.println("Project URI in addDevEvent is: "
+				+ projectUri.getPath());
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		keyValueMap.put("Tool", "Eclipse");
 		keyValueMap.put("SensorDataType", "DevEvent");
@@ -394,7 +395,7 @@ public class EclipseSensor {
 
 	/**
 	 * Extracts file name from a file resource URI.
-	 *
+	 * 
 	 * @param fileResource
 	 *            File name path.
 	 * @return File name.
@@ -537,16 +538,16 @@ public class EclipseSensor {
 
 	/**
 	 * Calculates java file unit test information.
-	 *
+	 * 
 	 * @param file
 	 *            IFile instance to a java file.
-	 *
+	 * 
 	 * @return UnitTestCounter instance to this java file.
 	 */
 	private JavaStatementMeter measureJavaFile(IFile file) {
 		// Compute number of tests and assertions to this file.
 		ICompilationUnit cu = (ICompilationUnit) JavaCore.create(file);
-		ASTParser parser = ASTParser.newParser(AST.JLS8);
+		ASTParser parser = ASTParser.newParser(AST.JLS4);
 		parser.setSource(cu);
 		parser.setResolveBindings(true);
 
@@ -602,7 +603,7 @@ public class EclipseSensor {
 	/**
 	 * Gets the fully qualified class name for an active file. For example, its
 	 * value is foo.bar.Baz.
-	 *
+	 * 
 	 * @param file
 	 *            Get fully qualified class file.
 	 * @return The fully qualified class name. For example,foo.bar.Baz.
@@ -653,11 +654,10 @@ public class EclipseSensor {
 				IFileEditorInput input = (IFileEditorInput) editorInput;
 				IFile file = input.getFile();
 				if (file != null) {
-					System.out.println(file.getProject().getLocationURI());
 					try {
-						return file.getProject().getDescription().getLocationURI();
+						return file.getProject().getDescription()
+								.getLocationURI();
 					} catch (CoreException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 						return URI.create("file:///Unknown");
 					}
@@ -675,7 +675,7 @@ public class EclipseSensor {
 	 * such as file:/D:/cvs/foobarproject/src/foo/bar/Bar.java. When a
 	 * developers is not editing an active file, this method will return a dummy
 	 * file resource.
-	 *
+	 * 
 	 * @param textEditor
 	 *            A ITextEditor instance form which the file name is retrieved.
 	 * @return The fully qualified file name. For example,
@@ -700,7 +700,7 @@ public class EclipseSensor {
 
 	/**
 	 * Gets current active editor.
-	 *
+	 * 
 	 * @return Current editor.
 	 */
 	public ITextEditor getActiveTextEditor() {
@@ -731,7 +731,7 @@ public class EclipseSensor {
 	 * Provides the IWindowListener-implemented class to catch the
 	 * "Browser activated", "Browser closing" event. This inner class is
 	 * designed to be used by the outer EclipseSensor class.
-	 *
+	 * 
 	 * @author Takuya Yamashita
 	 * @version $Id: EclipseSensor.java,v 1.1.1.1 2005/10/20 23:56:56 johnson
 	 *          Exp $
@@ -742,7 +742,7 @@ public class EclipseSensor {
 		 * <code>IWindowListener</code>. This method must not be called by
 		 * client because it is called by platform. Do nothing for Eclipse
 		 * sensor so far.
-		 *
+		 * 
 		 * @param window
 		 *            An IWorkbenchWindow instance to be triggered when a window
 		 *            is activated.
@@ -773,7 +773,7 @@ public class EclipseSensor {
 		 * client because it is called by platform. Whenever window is closing,
 		 * set all the current active file to process file metrics, and then try
 		 * to send them to server.
-		 *
+		 * 
 		 * @param window
 		 *            An IWorkbenchWindow instance to be triggered when a window
 		 *            is closed.
@@ -787,7 +787,7 @@ public class EclipseSensor {
 		 * <code>IWindowListener</code>. This method must not be called by
 		 * client because it is called by platform. Do nothing for Eclipse
 		 * sensor so far.
-		 *
+		 * 
 		 * @param window
 		 *            An IWorkbenchWindow instance to be triggered when a window
 		 *            is deactivated.
@@ -817,7 +817,7 @@ public class EclipseSensor {
 		 * <code>IWindowListener</code>. This method must not be called by
 		 * client because it is called by platform. Do nothing for Eclipse
 		 * sensor so far.
-		 *
+		 * 
 		 * @param window
 		 *            An IWorkbenchWindow instance to be triggered when a window
 		 *            is opened.
@@ -838,7 +838,7 @@ public class EclipseSensor {
 	 * <li>partDeactivated()</li>
 	 * <li>partActivate() if any</li>
 	 * </ol>
-	 *
+	 * 
 	 * @author Takuya Yamashita
 	 * @version $Id: EclipseSensor.java,v 1.1.1.1 2005/10/20 23:56:56 johnson
 	 *          Exp $
@@ -849,7 +849,7 @@ public class EclipseSensor {
 		 * implement <code>IPartListener</code>. This method must not be called
 		 * by client because it is called by platform. Do nothing for Eclipse
 		 * sensor so far.
-		 *
+		 * 
 		 * @param part
 		 *            An IWorkbenchPart instance to be triggered when a part is
 		 *            activated.
@@ -857,7 +857,6 @@ public class EclipseSensor {
 		public void partActivated(IWorkbenchPart part) {
 
 			if (part instanceof ITextEditor) {
-				// System.out.println("Sensor : " + part);
 				EclipseSensor.this.isActivatedWindow = true;
 				EclipseSensor.this.activeTextEditor = (ITextEditor) part;
 				ITextEditor editor = EclipseSensor.this.activeTextEditor;
@@ -880,7 +879,7 @@ public class EclipseSensor {
 		 * implement <code>IPartListener</code>. This method must not be called
 		 * by client because it is called by platform. Do nothing for Eclipse
 		 * sensor so far.
-		 *
+		 * 
 		 * @param part
 		 *            An IWorkbenchPart instance to be triggered when a part is
 		 *            brought to top.
@@ -896,7 +895,7 @@ public class EclipseSensor {
 		 * check whether or not part is the instance of <code>IEditorPart</code>
 		 * , if so, set process activity as <code>ActivityType.CLOSE_FILE</code>
 		 * with its absolute path.
-		 *
+		 * 
 		 * @param part
 		 *            An IWorkbenchPart instance to be triggered when a part is
 		 *            closed.
@@ -936,7 +935,7 @@ public class EclipseSensor {
 		 * implement <code>IPartListener</code>. This method must not be called
 		 * by client because it is called by platform. Sets active text editor
 		 * to be null when the text editor part is deactivated.
-		 *
+		 * 
 		 * @param part
 		 *            An IWorkbenchPart instance to be triggered when a part is
 		 *            deactivated.
@@ -990,7 +989,7 @@ public class EclipseSensor {
 		 * check whether or not part is the instance of <code>IEditorPart</code>
 		 * , if so, set process activity as <code>ActivityType.OPEN_FILE</code>
 		 * with its absolute path.
-		 *
+		 * 
 		 * @param part
 		 *            An IWorkbenchPart instance to be triggered when part is
 		 *            opened.
@@ -1020,7 +1019,7 @@ public class EclipseSensor {
 	/**
 	 * Provides IDocuementListener-implemented class to set an active buffer
 	 * size when a document is being edited.
-	 *
+	 * 
 	 * @author Takuya Yamashita
 	 * @version $Id: EclipseSensor.java,v 1.1.1.1 2005/10/20 23:56:56 johnson
 	 *          Exp $
@@ -1029,7 +1028,7 @@ public class EclipseSensor {
 		/**
 		 * Do nothing right now. Just leave it due to implementation of
 		 * IDocumentationListener.
-		 *
+		 * 
 		 * @param event
 		 *            An event triggered when a document is about to be changed.
 		 */
@@ -1043,7 +1042,7 @@ public class EclipseSensor {
 		 * document change since this EclipseSensorPlugin instance was added to
 		 * IDocumentLister. Since this method, the current buffer size of an
 		 * active file could be grabbed.
-		 *
+		 * 
 		 * @param event
 		 *            An event triggered when a document is changed.
 		 */
@@ -1058,7 +1057,7 @@ public class EclipseSensor {
 	 * that this implementing class uses Visitor pattern so that key point to
 	 * gather these event information is inside the visitor method which is
 	 * implemented from <code>IResourceDeltaVisitor</code> class.
-	 *
+	 * 
 	 * @author Takuya Yamashita
 	 * @version $Id: EclipseSensor.java,v 1.1.1.1 2005/10/20 23:56:56 johnson
 	 *          Exp $
@@ -1070,7 +1069,7 @@ public class EclipseSensor {
 		 * implement <code>IResourceChangeListener</code>. This method must not
 		 * be called by client because it is called by platform when resources
 		 * are changed.
-		 *
+		 * 
 		 * @param event
 		 *            A resource change event to describe changes to resources.
 		 */
@@ -1099,7 +1098,7 @@ public class EclipseSensor {
 		 * instance has children. <code>false</code> is returned when either
 		 * Project is opened, closed, or file is saved because no more traverse
 		 * of children of the IResourceDelta instance is needed.
-		 *
+		 * 
 		 * @param delta
 		 *            IResourceDelta instance to contains delta resource.
 		 * @return true if the resource delta's children should be visited;
@@ -1131,6 +1130,7 @@ public class EclipseSensor {
 				String projectName = project.getName();
 				URI projectResource = project.getFile(".project")
 						.getLocationURI();
+				URI projectUri = project.getDescription().getLocationURI();
 
 				Map<String, String> keyValueMap = new HashMap<String, String>();
 				keyValueMap.put(EclipseSensorConstants.UNIT_TYPE, "project");
@@ -1140,14 +1140,14 @@ public class EclipseSensor {
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
 					EclipseSensor.this.addDevEvent(
 							EclipseSensorConstants.DEVEVENT_EDIT,
-							projectResource, projectResource, keyValueMap,
+							projectUri, projectResource, keyValueMap,
 							projectResource.toString());
 
 				} else {
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Close");
 					EclipseSensor.this.addDevEvent(
 							EclipseSensorConstants.DEVEVENT_EDIT,
-							projectResource, projectResource, keyValueMap,
+							projectUri, projectResource, keyValueMap,
 							projectResource.toString());
 				}
 				return false;
@@ -1209,7 +1209,8 @@ public class EclipseSensor {
 							EclipseSensor.this.extractFileName(fileResource));
 
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Save");
-					String commitMessage = "File " + fileResource.getPath() + " changed at " + System.currentTimeMillis();
+					String commitMessage = "File " + fileResource.getPath()
+							+ " changed at " + System.currentTimeMillis();
 					ObjectId hash = EclipseSensor.this.commitSnapshot(
 							projectURI.getPath(), commitMessage);
 					if (hash != null) {
@@ -1231,7 +1232,7 @@ public class EclipseSensor {
 
 	/**
 	 * Stops the Eclipse sensor and quits sensorshell.
-	 *
+	 * 
 	 */
 	public void stop() {
 		this.sensorShellWrapper.quit();
@@ -1240,10 +1241,14 @@ public class EclipseSensor {
 	public ObjectId commitSnapshot(String projectUri, String message) {
 		// Here, we check to see if we have a local repository already.
 		// Otherwise, we need to create one.
+		System.out.println("committing snapshot for project: " + projectUri + " in eclipsesensor");
 		File localRepoDir = new File(projectUri);
 		if (!localRepoDir.isDirectory()) {
 			localRepoDir.mkdirs();
 		}
+		// If the directory exists, we need to pull form the server before we
+		// push
+		boolean needsPull = !(new File(projectUri, "/.git").isDirectory());
 		try {
 			Git git = Git.init().setDirectory(localRepoDir).call();
 			// Add all files in the project directory if they aren't already
@@ -1251,7 +1256,7 @@ public class EclipseSensor {
 
 			// Actual commit
 			RevCommit commit = git.commit().setMessage(message).call();
-			this.sensorShellWrapper.commitSnapshot(projectUri, git);
+			this.sensorShellWrapper.commitSnapshot(projectUri, git, needsPull);
 			git.close();
 			return commit.getId();
 		} catch (NoFilepatternException e) {
