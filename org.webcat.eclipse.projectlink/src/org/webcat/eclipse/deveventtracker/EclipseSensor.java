@@ -71,7 +71,11 @@ import org.eclipse.jgit.revwalk.RevCommit;
  * activity was not set until the initial call for <code>getInstance()</code>.
  * </p>
  * 
- * @author Hongbing Kou, Takuya Yamashita
+ * Adapted from Hackystat project.
+ * 
+ * @author Hongbing Kou
+ * @author Takuya Yamashita
+ * @author Joseph Luke
  */
 public class EclipseSensor {
 	/** A singleton instance. */
@@ -157,7 +161,7 @@ public class EclipseSensor {
 	private String latestBuffTrans = "";
 
 	private static Integer JLSVersion = null;
-	
+
 	/**
 	 * Provides instantiation of SensorProperties, which has information in the
 	 * sensor.properties file, and executes <code>doCommand</code> to activate
@@ -173,7 +177,8 @@ public class EclipseSensor {
 		this.buffTransTimerTask = new BuffTransTimertask();
 
 		// Load sensor's setting.
-		this.sensorShellWrapper = new SensorShellWrapper(new SensorShellProperties());
+		this.sensorShellWrapper = new SensorShellWrapper(
+				new SensorShellProperties());
 
 		// Adds this EclipseSensorPlugin instance to IResourceChangeListener
 		// so that project event and file save event is notified.
@@ -210,7 +215,6 @@ public class EclipseSensor {
 
 		return theInstance;
 	}
-
 
 	/**
 	 * Initializes sensor and JUnitListener instance if the sensor is enabled.
@@ -331,8 +335,6 @@ public class EclipseSensor {
 		if (projectUri == null) {
 			return;
 		}
-		System.out.println("Project URI in addDevEvent is: "
-				+ projectUri.getPath());
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		keyValueMap.put("Tool", "Eclipse");
 		keyValueMap.put("SensorDataType", "DevEvent");
@@ -521,8 +523,7 @@ public class EclipseSensor {
 	}
 
 	private static int getJLSVersion() {
-		if (EclipseSensor.JLSVersion == null)
-		{
+		if (EclipseSensor.JLSVersion == null) {
 			try {
 				EclipseSensor.JLSVersion = 2;
 				Class<?> c = Class.forName("org.eclipse.jdt.core.dom.AST");
@@ -530,14 +531,14 @@ public class EclipseSensor {
 				int highestVersionFieldValue = 2;
 				String currentVersionNumberString;
 				int currentVersionNumberInt;
-				for (Field f : c.getFields())
-				{
-					if(f.getName().startsWith("JLS") && !f.getName().endsWith("_INTERNAL"))
-					{
-						currentVersionNumberString = f.getName().replace("JLS", "").replace("_INTERNAL", "");
-						currentVersionNumberInt = Integer.parseInt(currentVersionNumberString);
-						if(currentVersionNumberInt > highestVersionNumber)
-						{
+				for (Field f : c.getFields()) {
+					if (f.getName().startsWith("JLS")
+							&& !f.getName().endsWith("_INTERNAL")) {
+						currentVersionNumberString = f.getName()
+								.replace("JLS", "").replace("_INTERNAL", "");
+						currentVersionNumberInt = Integer
+								.parseInt(currentVersionNumberString);
+						if (currentVersionNumberInt > highestVersionNumber) {
 							highestVersionNumber = currentVersionNumberInt;
 							highestVersionFieldValue = f.getInt(null);
 						}
@@ -545,11 +546,11 @@ public class EclipseSensor {
 				}
 				EclipseSensor.JLSVersion = highestVersionFieldValue;
 			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			} catch (IllegalAccessException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			}
 		}
 		return EclipseSensor.JLSVersion;
@@ -632,9 +633,8 @@ public class EclipseSensor {
 				// but did not open
 				// it with "Java Perspective". Thus, the Java Model does not
 				// exist to parse
-				// Java files. So we only log out exception while Eclipse's Java
-				// Perspective
-				// exits.
+				// Java files. So we only log our exception while Eclipse's Java
+				// Perspective exists.
 				if (!e.isDoesNotExist()) {
 					Activator.getDefault().log(file.getName(), e);
 				}
@@ -655,7 +655,7 @@ public class EclipseSensor {
 						return file.getProject().getDescription()
 								.getLocationURI();
 					} catch (CoreException e) {
-						e.printStackTrace();
+						Activator.getDefault().log(e);
 						return URI.create("file:///Unknown");
 					}
 				}
@@ -1082,7 +1082,7 @@ public class EclipseSensor {
 					// visit resource delta.
 					rootDelta.accept(this);
 				} catch (CoreException e) {
-					e.printStackTrace();
+					Activator.getDefault().log(e);
 				}
 			}
 		}
@@ -1204,7 +1204,8 @@ public class EclipseSensor {
 
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Save");
 					String commitMessage = "File " + fileResource.getPath()
-							+ " changed at " + new Date(System.currentTimeMillis());
+							+ " changed at "
+							+ new Date(System.currentTimeMillis());
 					ObjectId hash = EclipseSensor.this.commitSnapshot(
 							projectURI.getPath(), commitMessage);
 					if (hash != null) {
@@ -1233,12 +1234,21 @@ public class EclipseSensor {
 		SensorBaseClient.getInstance().stopClient();
 	}
 
+	/**
+	 * Commits a snapshot (via the SensorBaseClient) of the given project with
+	 * the given message. This snapshot is pushed to the server if connection
+	 * permits.
+	 * 
+	 * @param projectUri
+	 *            The path of the project to commit.
+	 * @param message
+	 *            The commit message to use.
+	 * @return The commitHash of the local commit.
+	 */
 	public ObjectId commitSnapshot(String projectUri, String message) {
 		// Here, we check to see if we have a local repository already.
 		// Otherwise, we need to create one.
 		if (projectUri != null) {
-			System.out.println("committing snapshot for project: " + projectUri
-					+ " in eclipsesensor");
 			File localRepoDir = new File(projectUri);
 			if (!localRepoDir.isDirectory()) {
 				localRepoDir.mkdirs();
@@ -1248,22 +1258,19 @@ public class EclipseSensor {
 			boolean needsPull = !(new File(projectUri, "/.git").isDirectory());
 			// If we have a .needspull file, also pass true for needsPull and
 			// delete the file.
-			if(!needsPull)
-			{
+			if (!needsPull) {
 				File needsPullFile = new File(projectUri, "/.needspull");
-				if(needsPullFile.exists())
-				{
+				if (needsPullFile.exists()) {
 					needsPull = true;
 					needsPullFile.delete();
 				}
 			}
 			try {
 				Git git = Git.init().setDirectory(localRepoDir).call();
-				
+
 				// Create default .gitignore file if it doesn't already exist
 				File gitignore = new File(projectUri, "/.gitignore");
-				if(!gitignore.exists())
-				{
+				if (!gitignore.exists()) {
 					try {
 						gitignore.createNewFile();
 						FileWriter fw = new FileWriter(gitignore, true);
@@ -1284,24 +1291,24 @@ public class EclipseSensor {
 						out.close();
 						fw.close();
 					} catch (IOException e) {
-						e.printStackTrace();
+						Activator.getDefault().log(e);
 					}
 				}
-				
+
 				// Add all files in the project directory
 				git.add().addFilepattern(".").call();
 
 				// Actual commit
-				 RevCommit commit = SensorBaseClient.getInstance().commitSnapshot(projectUri, git, message, needsPull);
+				RevCommit commit = SensorBaseClient.getInstance()
+						.commitSnapshot(projectUri, git, message, needsPull);
 				git.close();
-				if (commit != null)
-				{
+				if (commit != null) {
 					return commit.getId();
 				}
 			} catch (NoFilepatternException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			} catch (GitAPIException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			}
 		}
 		return null;

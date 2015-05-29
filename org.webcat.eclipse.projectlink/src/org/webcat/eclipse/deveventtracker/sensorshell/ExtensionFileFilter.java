@@ -7,6 +7,8 @@ import java.util.Locale;
 /**
  * Provides a file filter that accepts only files with a given case-insensitive extension.
  *
+ * Imported from Hackystat project.
+ *
  * @author    Philip M. Johnson
  * @version   $Id: ExtensionFileFilter.java,v 1.1.1.1 2005/10/20 23:56:44 johnson Exp $
  */

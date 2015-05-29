@@ -4,6 +4,9 @@ package org.webcat.eclipse.deveventtracker.sensorshell;
 /**
  * An exception that is thrown when problems occur with instantiating SensorShellProperties or 
  * sending sensor data. 
+ * 
+ * Imported from Hackystat project.
+ * 
  * @author Aaron A. Kagawa, Philip Johnson
  */
 public class SensorShellException extends Exception {

@@ -4,20 +4,20 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 
 
 /**
- * Provides Hackystat sensors with access to standard Hackystat sensorshell properties.  These 
- * properties are generally stored in ~/.hackystat/sensorshell/sensorshell.properties.
+ * Provides Hackystat sensors with access to standard Hackystat sensorshell properties.
  * This class manages access to those files for sensors, 
  * performs type conversions on the String-based properties when appropriate, and sets default
  * values when the properties are missing or incorrectly specified.
  * <p>
  * See the public static final Strings for descriptions of the "standard" Hackystat sensorshell
  * properties.
+ * 
+ * Imported from Hackystat project.
  * 
  * @author Philip M. Johnson, Aaron A. Kagawa
  */
@@ -131,9 +131,6 @@ public class SensorShellProperties {
  
   /** The internal properties object. */
   private Properties sensorProps = new Properties();
-  
-  private Logger logger = HackystatLogger.getLogger("org.hackystat.sensorshell.properties", 
-      "sensorshell");
 
   /** The default timeout in seconds. */
   private int timeout = 10;
@@ -244,13 +241,11 @@ public class SensorShellProperties {
       newValue = this.getProperty(SENSORSHELL_TIMEOUT_KEY);
       this.timeout = Integer.parseInt(newValue);
       if (this.timeout < 1) {
-        this.logger.warning(errMsg + SENSORSHELL_TIMEOUT_KEY + " " + newValue); 
         this.sensorProps.setProperty(SENSORSHELL_TIMEOUT_KEY, origValue);
         this.timeout = Integer.parseInt(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_TIMEOUT_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_TIMEOUT_KEY, origValue);
     }
     // Now set the SensorBaseClient default timeout.
@@ -261,14 +256,12 @@ public class SensorShellProperties {
       origValue = String.valueOf(this.pingTimeout);
       newValue = this.getProperty(SENSORSHELL_PING_TIMEOUT_KEY);
       this.pingTimeout = Integer.parseInt(newValue);
-      if (this.pingTimeout < 1) {
-        this.logger.warning(errMsg + SENSORSHELL_PING_TIMEOUT_KEY + " " + newValue); 
+      if (this.pingTimeout < 1) { 
         this.sensorProps.setProperty(SENSORSHELL_PING_TIMEOUT_KEY, origValue);
         this.pingTimeout = Integer.parseInt(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_PING_TIMEOUT_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_PING_TIMEOUT_KEY, origValue);
     }
     // MULTISHELL_ENABLED
@@ -278,7 +271,6 @@ public class SensorShellProperties {
       this.multiShellEnabled = Boolean.parseBoolean(newValue);
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_ENABLED_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_ENABLED_KEY, origValue); 
     }
     // MULTISHELL_NUMSHELLS
@@ -287,13 +279,11 @@ public class SensorShellProperties {
       newValue = this.getProperty(SENSORSHELL_MULTISHELL_NUMSHELLS_KEY);
       this.multiShellNumShells = Integer.parseInt(newValue);
       if (this.multiShellNumShells < 1) {
-        this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_NUMSHELLS_KEY + " " + newValue); 
         this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_NUMSHELLS_KEY, origValue);
         this.multiShellNumShells = Integer.parseInt(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_NUMSHELLS_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_NUMSHELLS_KEY, origValue); 
     }
     // MULTISHELL_BATCHSIZE
@@ -301,14 +291,12 @@ public class SensorShellProperties {
       origValue = String.valueOf(multiShellBatchSize);
       newValue = this.getProperty(SENSORSHELL_MULTISHELL_BATCHSIZE_KEY);
       this.multiShellBatchSize = Integer.parseInt(newValue);
-      if (this.multiShellBatchSize < 1) {
-        this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_BATCHSIZE_KEY + " " + newValue); 
+      if (this.multiShellBatchSize < 1) { 
         this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_BATCHSIZE_KEY, origValue);
         this.multiShellBatchSize = Integer.parseInt(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_BATCHSIZE_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_BATCHSIZE_KEY, origValue);
     }
     // MULTISHELL_MAXBUFFER
@@ -317,13 +305,11 @@ public class SensorShellProperties {
       newValue = this.getProperty(SENSORSHELL_MULTISHELL_MAXBUFFER_KEY);
       this.multiShellMaxBuffer = Integer.parseInt(newValue);
       if (this.multiShellMaxBuffer < 1) {
-        this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_MAXBUFFER_KEY + " " + newValue); 
         this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_MAXBUFFER_KEY, origValue);
         this.multiShellMaxBuffer = Integer.parseInt(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_MAXBUFFER_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_MAXBUFFER_KEY, origValue);
     }    
     // MULTISHELL_AUTOSEND_TIMEINTERVAL
@@ -332,13 +318,11 @@ public class SensorShellProperties {
       newValue = this.getProperty(SENSORSHELL_MULTISHELL_AUTOSEND_TIMEINTERVAL_KEY);
       this.multiShellAutoSendTimeInterval = Double.parseDouble(newValue);
       if (this.multiShellAutoSendTimeInterval < 0.0) {
-        this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_AUTOSEND_TIMEINTERVAL_KEY + newValue); 
         this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_AUTOSEND_TIMEINTERVAL_KEY, origValue);
         this.multiShellAutoSendTimeInterval = Double.parseDouble(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_MULTISHELL_AUTOSEND_TIMEINTERVAL_KEY + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_MULTISHELL_AUTOSEND_TIMEINTERVAL_KEY, origValue);
     }
     // OFFLINE_CACHE_ENABLED
@@ -348,11 +332,9 @@ public class SensorShellProperties {
       this.offlineCacheEnabled = Boolean.parseBoolean(newValue);
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_OFFLINE_CACHE_ENABLED_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_OFFLINE_CACHE_ENABLED_KEY, origValue);
     }
     if (this.multiShellEnabled && this.offlineCacheEnabled) {
-      this.logger.warning("Warning: Offline cache disabled since multishell enabled.");
       this.offlineCacheEnabled = false;
     }
 
@@ -363,11 +345,9 @@ public class SensorShellProperties {
       this.offlineRecoveryEnabled = Boolean.parseBoolean(newValue);
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_OFFLINE_RECOVERY_ENABLED_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_OFFLINE_RECOVERY_ENABLED_KEY, origValue);
     }
     if (this.multiShellEnabled && this.offlineRecoveryEnabled) {
-      this.logger.warning("Warning: Offline recovery disabled since multishell enabled.");
       this.offlineRecoveryEnabled = false;
     }
     // STATECHANGE_INTERVAL
@@ -376,13 +356,11 @@ public class SensorShellProperties {
       newValue = this.getProperty(SENSORSHELL_STATECHANGE_INTERVAL_KEY);
       this.statechangeInterval = Integer.parseInt(newValue);
       if (this.statechangeInterval < 1) {
-        this.logger.warning(errMsg + SENSORSHELL_STATECHANGE_INTERVAL_KEY + " " + newValue); 
         this.sensorProps.setProperty(SENSORSHELL_STATECHANGE_INTERVAL_KEY, origValue);
         this.statechangeInterval = Integer.parseInt(origValue);
       }
     }
-    catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_STATECHANGE_INTERVAL_KEY + " " + newValue); 
+    catch (Exception e) { 
       this.sensorProps.setProperty(SENSORSHELL_STATECHANGE_INTERVAL_KEY, origValue);
     }
     // AUTOSEND_TIMEINTERVAL (Single Shell)
@@ -390,14 +368,12 @@ public class SensorShellProperties {
       origValue = String.valueOf(autosendTimeInterval);
       newValue = this.getProperty(SENSORSHELL_AUTOSEND_TIMEINTERVAL_KEY);
       this.autosendTimeInterval = Double.parseDouble(newValue);
-      if (this.autosendTimeInterval < 0.0) {
-        this.logger.warning(errMsg + SENSORSHELL_AUTOSEND_TIMEINTERVAL_KEY + " " + newValue); 
+      if (this.autosendTimeInterval < 0.0) { 
         this.sensorProps.setProperty(SENSORSHELL_AUTOSEND_TIMEINTERVAL_KEY, origValue);
         this.autosendTimeInterval = Double.parseDouble(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_AUTOSEND_TIMEINTERVAL_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_AUTOSEND_TIMEINTERVAL_KEY, origValue);
     }
     // AUTOSEND_MAXBUFFER
@@ -406,13 +382,11 @@ public class SensorShellProperties {
       newValue = this.getProperty(SENSORSHELL_AUTOSEND_MAXBUFFER_KEY);
       this.autosendMaxBuffer = Integer.parseInt(newValue);
       if (this.autosendMaxBuffer < 1) {
-        this.logger.warning(errMsg + SENSORSHELL_AUTOSEND_MAXBUFFER_KEY + " " + newValue); 
         this.sensorProps.setProperty(SENSORSHELL_AUTOSEND_MAXBUFFER_KEY, origValue);
         this.autosendMaxBuffer = Integer.parseInt(origValue);
       }
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_AUTOSEND_MAXBUFFER_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_AUTOSEND_MAXBUFFER_KEY, origValue);
     }
     // LOGGING_LEVEL
@@ -422,7 +396,6 @@ public class SensorShellProperties {
       this.loggingLevel = Level.parse(newValue);
     }
     catch (Exception e) {
-      this.logger.warning(errMsg + SENSORSHELL_LOGGING_LEVEL_KEY + " " + newValue); 
       this.sensorProps.setProperty(SENSORSHELL_LOGGING_LEVEL_KEY, origValue);
     }
   }

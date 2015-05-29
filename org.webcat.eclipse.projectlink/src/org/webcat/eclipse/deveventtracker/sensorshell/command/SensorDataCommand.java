@@ -1,7 +1,6 @@
 package org.webcat.eclipse.deveventtracker.sensorshell.command;
 
 import java.util.Map;
-import java.util.logging.Level;
 
 import org.webcat.eclipse.deveventtracker.sensorbase.Properties;
 import org.webcat.eclipse.deveventtracker.sensorbase.Property;
@@ -12,10 +11,13 @@ import org.webcat.eclipse.deveventtracker.sensorbase.SensorDatas;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.deveventtracker.sensorshell.SingleSensorShell;
+import org.webcat.eclipse.projectlink.Activator;
 
 /**
  * Implements the SensorData commands, of which there is "add", "send", and
  * "statechange".
+ * 
+ * Imported from Hackystat project.
  * 
  * @author Philip Johnson
  */
@@ -63,12 +65,10 @@ public class SensorDataCommand extends Command {
 		}
 		// Indicate we're sending if in interactive mode.
 		if (!this.shell.isInteractive()) {
-			this.shell.getLogger().info("#> send" + cr);
 		}
 
 		// Do a ping to see that we can connect to the server.
 		if (SensorBaseClient.getInstance().isPingable()) {
-			System.out.println("pingable");
 			// We can connect, and there is data, so attempt to send.
 			try {
 				this.shell.println("Attempting to send "
@@ -88,15 +88,16 @@ public class SensorDataCommand extends Command {
 			} catch (SensorBaseClientException e) {
 				this.shell.println("Error sending data: " + e);
 				this.sensorDatas.getSensorData().clear();
+				Activator.getDefault().log("Could not send data", e);
 				throw new SensorShellException(
 						"Could not send data: error in SensorBaseClient", e);
 			}
 		}
-		System.out.println("not pingable");
 
 		// If we got here, then the server was not available.
 		if (this.properties.isOfflineCacheEnabled()) {
-			this.shell.println("Server " + SensorBaseClient.getInstance().getHost()
+			this.shell.println("Server "
+					+ SensorBaseClient.getInstance().getHost()
 					+ " not available." + " Storing sensor data offline.");
 			this.shell.getOfflineManager().store(this.sensorDatas);
 			this.sensorDatas.getSensorData().clear();
@@ -174,6 +175,7 @@ public class SensorDataCommand extends Command {
 			}
 			add(data);
 		} catch (Exception e) {
+			Activator.getDefault().log("Error adding sensor data instance", e);
 			throw new SensorShellException(
 					"Error adding sensor data instance.", e);
 		}
@@ -190,9 +192,6 @@ public class SensorDataCommand extends Command {
 	 */
 	public void add(SensorData data) throws SensorShellException {
 		sensorDatas.getSensorData().add(data);
-		if (this.shell.getLogger().isLoggable(Level.FINE)) {
-			this.shell.println("Adding: " + formatSensorData(data));
-		}
 		// If that makes the buffer size too big, then send this data.
 		if (sensorDatas.getSensorData().size() > properties
 				.getAutoSendMaxBuffer()) {
@@ -201,6 +200,7 @@ public class SensorDataCommand extends Command {
 			try {
 				this.send();
 			} catch (SensorShellException e) {
+				Activator.getDefault().log(e);
 				this.shell.println("Exception during send(): " + e);
 			}
 		}

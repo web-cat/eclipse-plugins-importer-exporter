@@ -19,6 +19,8 @@ import org.eclipse.core.resources.IResource;
  * 
  * <p>Otherwise the IResource instance is null.
  *
+ * Imported from Hackystat project.
+ *
  * @author Takuya Yamashita
  * @version $Id: EclipseSensorEvent.java,v 1.1.1.1 2005/10/20 23:56:57 johnson Exp $
  * @see org.eclipse.core.resources.IResource

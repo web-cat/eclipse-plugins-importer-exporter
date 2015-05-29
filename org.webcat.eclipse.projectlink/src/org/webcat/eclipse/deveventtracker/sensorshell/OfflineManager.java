@@ -16,11 +16,14 @@ import java.util.Properties;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorDatas;
+import org.webcat.eclipse.projectlink.Activator;
 
 /**
  * Provides a facility for: (a) persisting buffered SensorData instances locally
  * when the SensorBase host is not available and (b) recovering them during a
  * subsequent invocation of SensorShell.
+ * 
+ * Imported from Hackystat project.
  * 
  * @author Philip Johnson
  */
@@ -81,7 +84,7 @@ public class OfflineManager {
 				out.flush();
 				out.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			}
 
 			try {
@@ -93,6 +96,7 @@ public class OfflineManager {
 			} catch (Exception e) {
 				parentShell.println("Error writing the offline file "
 						+ outFile.getName() + " " + e);
+				Activator.getDefault().log(e);
 			}
 		}
 	}
@@ -188,11 +192,13 @@ public class OfflineManager {
 				}
 			} catch (Exception e) {
 				shell.println("Error recovering data from: " + xmlFiles[i]);
+				Activator.getDefault().log(e);
 				try {
 					fileStream.close();
 				} catch (Exception f) {
 					shell.println("Failed to close: " + fileStream.toString()
 							+ " " + e);
+					Activator.getDefault().log(e);
 				}
 			}
 		}
@@ -254,7 +260,7 @@ public class OfflineManager {
 			br.close();
 			
 		} catch (IOException e) {
-			e.printStackTrace();
+			Activator.getDefault().log(e);
 		}
 		return datas;
 	}

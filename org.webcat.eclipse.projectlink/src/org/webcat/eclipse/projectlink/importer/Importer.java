@@ -51,6 +51,7 @@ import org.eclipse.core.runtime.preferences.IPreferencesService;
 import org.eclipse.swt.widgets.Display;
 import org.w3c.dom.Document;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
+import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.ProjectLinkException;
 import org.webcat.eclipse.projectlink.importer.model.ImportNode;
 import org.webcat.eclipse.projectlink.importer.model.ImporterManifest;
@@ -124,6 +125,7 @@ public class Importer
             }
             catch (IOException e)
             {
+            	Activator.getDefault().log(e);
                 // Do nothing.
             }
         }
@@ -177,10 +179,12 @@ public class Importer
         }
         catch (ParserConfigurationException e)
         {
+        	Activator.getDefault().log(e);
             throw new ProjectLinkException(e);
         }
         catch (SAXException e)
         {
+        	Activator.getDefault().log(e);
             throw new ProjectLinkException(e);
         }
         finally
@@ -350,6 +354,7 @@ public class Importer
 					}
 					catch (CoreException e)
 					{
+						Activator.getDefault().log(e);
 			    		//FIXME
 			    		//errors.add(new ImportError(prefs, e.getMessage()));
 					}
@@ -360,6 +365,7 @@ public class Importer
     	}
     	catch (Exception e)
     	{
+    		Activator.getDefault().log(e);
     		//FIXME
     		//errors.add(new ImportError(prefs, e.getMessage()));
     	}
@@ -458,13 +464,14 @@ public class Importer
 		        
 	        }
 	        // Send an event to the server indicating that a starter project has been downloaded.
-			SensorBaseClient.getInstance().downloadStarterProjectHappened(workspaceProject.getDescription().getLocationURI().getPath(), description.getName(), getRoot().getName());
+			SensorBaseClient.getInstance().downloadStarterProjectHappened(workspaceProject.getDescription().getLocationURI().getPath(), description.getName());
 			
 	        tempFile.delete();
     	}
     	catch (Exception e)
     	{
     		errors.add(new ImportError(project, e.getMessage()));
+    		Activator.getDefault().log(e);
     	}
 
         monitor.worked(1);

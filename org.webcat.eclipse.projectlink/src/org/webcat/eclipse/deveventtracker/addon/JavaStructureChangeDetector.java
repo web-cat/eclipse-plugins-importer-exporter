@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.ElementChangedEvent;
 import org.eclipse.jdt.core.IElementChangedListener;
@@ -19,8 +18,10 @@ import org.webcat.eclipse.deveventtracker.EclipseSensorConstants;
 /**
  * Listens to the java element change events to get incremental work on java
  * objects and collect refactoring information for test-driven development
- * analysis purpose. It's declared as package private so that it can only be
+ * analysis purpose. Its declared as package private so that it can only be
  * instantiated by Eclise sensor.
+ * 
+ * Imported from Hackystat project.
  * 
  * @author Hongbing Kou
  * @version $Id$

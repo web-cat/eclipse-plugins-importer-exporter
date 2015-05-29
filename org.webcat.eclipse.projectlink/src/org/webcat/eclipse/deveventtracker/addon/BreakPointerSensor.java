@@ -17,6 +17,8 @@ import org.webcat.eclipse.projectlink.Activator;
 /**
  * Listens to the break point changes to send activity data to Hackystat server.
  * 
+ * Imported from Hackystat project.
+ * 
  * @author Hongbing Kou
  * @version $Id: BreakPointerSensor.java,v 1.1.1.1 2005/10/20 23:56:56 johnson Exp $
  */

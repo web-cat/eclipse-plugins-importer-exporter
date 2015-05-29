@@ -25,6 +25,8 @@ import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
  * Programmatic mode involves creating an instance of SensorShell, retrieving the 
  * appropriate command instance (Ping, Add, etc.) and invoking the appropriate method.
  *
+ * Imported from Hackystat project.
+ *
  * @author    Philip M. Johnson
  */
 public class SensorShell implements Shell {

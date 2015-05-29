@@ -5,6 +5,9 @@ import org.webcat.eclipse.deveventtracker.sensorshell.SingleSensorShell;
 
 /**
  * A class providing access to information useful for all Command instances. 
+ * 
+ * Imported from Hackystat project.
+ * 
  * @author Philip Johnson
  */
 public class Command {

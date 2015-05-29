@@ -102,6 +102,7 @@ public class Messages extends NLS
 	public static String SubmitAssignmentPage_Project;
 	public static String SubmitAssignmentPage_No_URL_Title;
 	public static String SubmitAssignmentPage_No_URL_Description;
+	public static String Startup_Data_Collection_Notification;
 
 
 	//~ Static/instance variables .............................................

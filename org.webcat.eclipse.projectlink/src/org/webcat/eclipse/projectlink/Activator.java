@@ -66,7 +66,7 @@ public class Activator extends AbstractUIPlugin
 		try {
 			devEventTrackerSensor = EclipseSensor.getInstance();
 		} catch (SensorShellException e) {
-			e.printStackTrace();
+			log(e);
 		}
 		
 	}

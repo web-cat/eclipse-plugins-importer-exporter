@@ -31,7 +31,7 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IImportWizard;
 import org.eclipse.ui.IWorkbench;
-import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
+import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.dialogs.ExceptionDialog;
 import org.webcat.eclipse.projectlink.i18n.Messages;
 import org.webcat.eclipse.projectlink.importer.model.ImportNode;
@@ -44,125 +44,101 @@ import org.webcat.eclipse.projectlink.importer.model.ImporterManifest;
  * 
  * @author Ellen Boyd, Tony Allevato
  */
-public class DownloadAssignmentWizard extends Wizard implements IImportWizard
-{
-	//~ Instance/static variables .............................................
+public class DownloadAssignmentWizard extends Wizard implements IImportWizard {
+	// ~ Instance/static variables .............................................
 
 	private Importer importer;
 	private ImportNode selectedNode;
 
 	private DownloadAssignmentPage page;
 
-
-	//~ Constructors ..........................................................
+	// ~ Constructors ..........................................................
 
 	// ----------------------------------------------------------
-	public DownloadAssignmentWizard()
-	{
+	public DownloadAssignmentWizard() {
 		importer = new Importer();
-		
+
 		setNeedsProgressMonitor(true);
 	}
 
-
-	//~ Methods ...............................................................
+	// ~ Methods ...............................................................
 
 	// ----------------------------------------------------------
-	public void init(IWorkbench workbench, IStructuredSelection selection)
-	{
+	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		// Do nothing.
 	}
 
-
 	// ----------------------------------------------------------
-	public void addPages()
-	{
+	public void addPages() {
 		page = new DownloadAssignmentPage(importer);
 		addPage(page);
 	}
 
-
 	// ----------------------------------------------------------
 	@Override
-	public boolean performFinish()
-	{
-        selectedNode = page.getSelectedNode();
+	public boolean performFinish() {
+		selectedNode = page.getSelectedNode();
 
-        if (selectedNode == null)
-        {
-        	return false;
-        }
+		if (selectedNode == null) {
+			return false;
+		}
 
-		try
-		{
+		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException
-				{
-					try
-					{
+						throws InvocationTargetException, InterruptedException {
+					try {
 						downloadProjects(monitor);
-					}
-					catch (Exception e)
-					{
+					} catch (Exception e) {
+						Activator.getDefault().log(e);
 						throw new InvocationTargetException(e);
 					}
 				}
 			});
-		}
-		catch (InterruptedException e)
-		{
+		} catch (InterruptedException e) {
 			// TODO something
+			Activator.getDefault().log(e);
 			e.printStackTrace();
-		}
-		catch (InvocationTargetException e)
-		{
-			new ExceptionDialog(
-					getContainer().getShell(), e.getCause()).open();
+		} catch (InvocationTargetException e) {
+			Activator.getDefault().log(e);
+			new ExceptionDialog(getContainer().getShell(), e.getCause()).open();
 		}
 
 		return true;
 	}
 
-
 	// ----------------------------------------------------------
-	private void downloadProjects(IProgressMonitor monitor)
-	{
+	private void downloadProjects(IProgressMonitor monitor) {
 		ImporterManifest manifest = new ImporterManifest();
-        manifest.setImportNode(selectedNode);
+		manifest.setImportNode(selectedNode);
 
-        List<ImportError> errors = importer.importProjects(manifest, monitor);
-        
-        if (!errors.isEmpty())
-        {
-        	displayImportErrors(errors);
-        }
-	}
-	
-	
-	// ----------------------------------------------------------
-	private void displayImportErrors(List<ImportError> errors)
-	{
-		StringBuffer buffer = new StringBuffer();
-		buffer.append(
-				Messages.DownloadAssignmentWizard_Download_Error_Description);
-		
-		for (ImportError error : errors)
-		{
-			buffer.append(MessageFormat.format(
-					Messages.DownloadAssignmentWizard_Project_Error,
-					error.getProject().getName(),
-					error.getMessage()));
+		List<ImportError> errors = importer.importProjects(manifest, monitor);
+
+		if (!errors.isEmpty()) {
+			displayImportErrors(errors);
 		}
-		
+	}
+
+	// ----------------------------------------------------------
+	private void displayImportErrors(List<ImportError> errors) {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(Messages.DownloadAssignmentWizard_Download_Error_Description);
+
+		for (ImportError error : errors) {
+			buffer.append(MessageFormat.format(
+					Messages.DownloadAssignmentWizard_Project_Error, error
+							.getProject().getName(), error.getMessage()));
+		}
+
 		final String message = buffer.toString();
 
 		Display.getDefault().syncExec(new Runnable() {
-			public void run()
-			{
-				MessageDialog.openWarning(getContainer().getShell(),
-						Messages.DownloadAssignmentWizard_Download_Errors_Title,
-						message);
+			public void run() {
+				MessageDialog
+						.openWarning(
+								getContainer().getShell(),
+								Messages.DownloadAssignmentWizard_Download_Errors_Title,
+								message);
 			}
 		});
 	}

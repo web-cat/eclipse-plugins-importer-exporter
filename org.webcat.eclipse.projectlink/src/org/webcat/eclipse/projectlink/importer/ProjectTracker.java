@@ -30,94 +30,73 @@ import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
 //--------------------------------------------------------------------------
 /**
- * Tracks the projects that have been downloaded (so they aren't redownloaded
- * if multiple projects have it as a dependency, for example).
+ * Tracks the projects that have been downloaded (so they aren't redownloaded if
+ * multiple projects have it as a dependency, for example).
  * 
  * @author Ellen Boyd
  */
-public class ProjectTracker
-{
+public class ProjectTracker {
 	private static ProjectTracker instance;
 
 	private Properties history;
 
-
 	// ----------------------------------------------------------
-	private ProjectTracker()
-	{
+	private ProjectTracker() {
 		history = new Properties();
 		loadPluginPreferences();
 	}
 
-
 	// ----------------------------------------------------------
-	public synchronized static ProjectTracker getInstance()
-	{
-		if (instance == null)
-		{
+	public synchronized static ProjectTracker getInstance() {
+		if (instance == null) {
 			instance = new ProjectTracker();
 		}
-		
+
 		return instance;
 	}
-	
-	
+
 	// ----------------------------------------------------------
-	public String projectNameForUri(String uri)
-	{
+	public String projectNameForUri(String uri) {
 		return history.getProperty(uri);
 	}
-	
-	
+
 	// ----------------------------------------------------------
-	public void setProjectNameForUri(String uri, String projectName)
-	{
+	public void setProjectNameForUri(String uri, String projectName) {
 		history.setProperty(uri, projectName);
 		updatePluginPreferences();
 	}
-	
 
 	// ----------------------------------------------------------
-	private void loadPluginPreferences()
-	{
+	private void loadPluginPreferences() {
 		IPreferenceStore prefs = Activator.getDefault().getPreferenceStore();
-		
-		String historyString =
-				prefs.getString(IPreferencesConstants.DOWNLOADED_PROJECTS);
 
-		if (historyString.length() > 0)
-		{
+		String historyString = prefs
+				.getString(IPreferencesConstants.DOWNLOADED_PROJECTS);
+
+		if (historyString.length() > 0) {
 			StringReader reader = new StringReader(historyString);
 			history = new Properties();
-			
-			try
-			{
+
+			try {
 				history.load(reader);
-			}
-			catch (IOException e)
-			{
-				// Do nothing.
+			} catch (IOException e) {
+				Activator.getDefault().log(e);
 			}
 		}
 	}
 
-
 	// ----------------------------------------------------------
-	private void updatePluginPreferences()
-	{
+	private void updatePluginPreferences() {
 		IPreferenceStore prefs = Activator.getDefault().getPreferenceStore();
 
-		try
-		{
+		try {
 			StringWriter writer = new StringWriter();
 			history.store(writer, null);
 
 			prefs.setValue(IPreferencesConstants.DOWNLOADED_PROJECTS,
 					writer.toString());
-		}
-		catch (IOException e)
-		{
-			// Do nothing.
+		} catch (IOException e) {
+			Activator.getDefault().log(e);
 		}
 	}
 }

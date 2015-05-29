@@ -3,12 +3,15 @@ package org.webcat.eclipse.deveventtracker;
 import java.util.TimerTask;
 
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
+import org.webcat.eclipse.projectlink.Activator;
 
 
 /**
  * Implements Eclipse sensor timer task that can be executed by a timer. The timer task checks
  * buffer transition, which represents the event where a developer moves from one buffer
  * (containing a file) to another buffer (containing a different file).
+ *
+ * Imported from Hackystat project.
  *
  * @author Hongbing Kou
  */
@@ -23,7 +26,7 @@ public class BuffTransTimertask extends TimerTask {
       sensor.processBuffTrans();
     }
     catch (SensorShellException e) {
-      e.printStackTrace();
+      Activator.getDefault().log(e);
     }
   }
 }

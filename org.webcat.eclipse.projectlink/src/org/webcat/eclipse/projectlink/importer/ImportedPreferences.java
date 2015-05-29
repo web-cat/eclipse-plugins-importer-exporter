@@ -36,96 +36,74 @@ import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
  * 
  * @author Ellen Boyd, Tony Allevato
  */
-public class ImportedPreferences
-{
+public class ImportedPreferences {
 	private static ImportedPreferences instance;
 
 	private Properties history;
 
-
 	// ----------------------------------------------------------
-	private ImportedPreferences()
-	{
+	private ImportedPreferences() {
 		history = new Properties();
 		loadPluginPreferences();
 	}
 
-
 	// ----------------------------------------------------------
-	public synchronized static ImportedPreferences getInstance()
-	{
-		if (instance == null)
-		{
+	public synchronized static ImportedPreferences getInstance() {
+		if (instance == null) {
 			instance = new ImportedPreferences();
 		}
-		
+
 		return instance;
 	}
-	
-	
+
 	// ----------------------------------------------------------
-	public Date uriLastImported(String uri)
-	{
-		if (history.containsKey(uri))
-		{
+	public Date uriLastImported(String uri) {
+		if (history.containsKey(uri)) {
 			long timestamp = Long.parseLong(history.getProperty(uri));
 			return new Date(timestamp);
-		}
-		else
-		{
+		} else {
 			return null;
 		}
 	}
-	
-	
+
 	// ----------------------------------------------------------
-	public void trackUri(String uri)
-	{
+	public void trackUri(String uri) {
 		history.setProperty(uri, Long.toString(new Date().getTime()));
 		updatePluginPreferences();
 	}
-	
 
 	// ----------------------------------------------------------
-	private void loadPluginPreferences()
-	{
+	private void loadPluginPreferences() {
 		IPreferenceStore prefs = Activator.getDefault().getPreferenceStore();
-		
-		String historyString =
-				prefs.getString(IPreferencesConstants.IMPORTED_PREFERENCES);
 
-		if (historyString.length() > 0)
-		{
+		String historyString = prefs
+				.getString(IPreferencesConstants.IMPORTED_PREFERENCES);
+
+		if (historyString.length() > 0) {
 			StringReader reader = new StringReader(historyString);
 			history = new Properties();
-			
-			try
-			{
+
+			try {
 				history.load(reader);
-			}
-			catch (IOException e)
-			{
+			} catch (IOException e) {
+				Activator.getDefault().log(e);
 				// Do nothing.
 			}
 		}
 	}
 
-
 	// ----------------------------------------------------------
-	private void updatePluginPreferences()
-	{
+	private void updatePluginPreferences() {
 		IPreferenceStore prefs = Activator.getDefault().getPreferenceStore();
 
-		try
-		{
+		try {
 			StringWriter writer = new StringWriter();
 			history.store(writer, null);
 
 			prefs.setValue(IPreferencesConstants.IMPORTED_PREFERENCES,
 					writer.toString());
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
+			Activator.getDefault().log(e);
 			// Do nothing.
 		}
 	}

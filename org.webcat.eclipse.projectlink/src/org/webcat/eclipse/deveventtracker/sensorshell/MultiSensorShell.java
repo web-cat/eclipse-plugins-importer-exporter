@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
+import org.webcat.eclipse.projectlink.Activator;
 
 /**
  * MultiSensorShell is a wrapper around SingleSensorShell that is designed for high performance
@@ -64,6 +65,8 @@ import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
  * instances per second. We recommend using a single SensorShell instance rather than
  * MultiSensorShell unless optimizing data transmission throughput is an important requirement.
  * 
+ * Imported from Hackystat project.
+ * 
  * @author Philip Johnson
  */
 public class MultiSensorShell implements Shell {
@@ -112,7 +115,7 @@ public class MultiSensorShell implements Shell {
     try {
 		this.shells.get(getCurrShellIndex()).add(keyValMap);
 	} catch (SensorShellException e) {
-		e.printStackTrace();
+		Activator.getDefault().log(e);
 	}
   }
 

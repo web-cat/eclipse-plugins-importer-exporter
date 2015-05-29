@@ -9,6 +9,9 @@
             name="Web-CAT Assignments">
       </page>
    </extension>
+   <extension point="org.eclipse.ui.startup">
+      <startup class="org.webcat.eclipse.projectlink.EarlyStartup"/>
+   </extension>
    <extension
          point="org.eclipse.ui.importWizards">
       <wizard

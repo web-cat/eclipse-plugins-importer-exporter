@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.w3c.dom.Node;
+import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.util.IndentingWriter;
 
 // -------------------------------------------------------------------------
@@ -462,6 +463,7 @@ public abstract class ImportNode
         	catch (ParseException e)
         	{
         		setAvailability(NodeAvailability.AVAILABLE);
+        		Activator.getDefault().log(e);
         	}
         }
 

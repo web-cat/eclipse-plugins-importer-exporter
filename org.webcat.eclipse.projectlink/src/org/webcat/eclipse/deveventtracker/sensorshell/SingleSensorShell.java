@@ -12,19 +12,19 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
-import java.util.logging.Logger;
 
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorshell.command.AutoSendCommand;
 import org.webcat.eclipse.deveventtracker.sensorshell.command.QuitCommand;
 import org.webcat.eclipse.deveventtracker.sensorshell.command.SensorDataCommand;
+import org.webcat.eclipse.projectlink.Activator;
 
 /**
  * Provides the implementation of a single SensorShell instance.
- *
+ * 
+ * Imported from Hackystat project.
+ * 
  * @author Philip M. Johnson
  */
 public class SingleSensorShell implements Shell {
@@ -56,9 +56,6 @@ public class SingleSensorShell implements Shell {
 	/** The sensor properties instance. */
 	private SensorShellProperties sensorProperties;
 
-	/** The logging instance for SensorShells. */
-	private Logger logger;
-
 	/** The send command. */
 	private SensorDataCommand sensorDataCommand;
 
@@ -71,15 +68,13 @@ public class SingleSensorShell implements Shell {
 	/** The startup time for this sensorshell. */
 	private Date startTime = new Date();
 
-	private Formatter oneLineFormatter = new OneLineFormatter(true, false);
-
 	/**
 	 * Constructs a new SensorShell instance that can be provided with
 	 * notification data to be sent eventually to a specific user key and host.
 	 * The toolName field in the log file name is set to "interactive" if the
 	 * tool is invoked interactively and "tool" if it is invoked
 	 * programmatically.
-	 *
+	 * 
 	 * @param properties
 	 *            The sensor properties instance for this run.
 	 * @param isInteractive
@@ -95,7 +90,7 @@ public class SingleSensorShell implements Shell {
 	/**
 	 * Constructs a new SensorShell instance that can be provided with
 	 * notification data to be sent eventually to a specific user key and host.
-	 *
+	 * 
 	 * @param properties
 	 *            The sensor properties instance for this run.
 	 * @param isInteractive
@@ -115,7 +110,7 @@ public class SingleSensorShell implements Shell {
 	 * notification data to be sent eventually to a specific user key and host.
 	 * (For testing purposes only, you may want to disable offline data
 	 * recovery.)
-	 *
+	 * 
 	 * @param properties
 	 *            The sensor properties instance for this run.
 	 * @param isInteractive
@@ -134,7 +129,6 @@ public class SingleSensorShell implements Shell {
 		boolean commandFilePresent = ((commandFile != null));
 		SensorBaseClient client = SensorBaseClient.getInstance();
 		client.setClientTimeout(properties.getTimeout() * 1000);
-		initializeLogger();
 		this.sensorDataCommand = new SensorDataCommand(this, properties);
 		AutoSendCommand autoSendCommand = new AutoSendCommand(this, properties);
 		this.quitCommand = new QuitCommand(this, properties, sensorDataCommand,
@@ -147,7 +141,7 @@ public class SingleSensorShell implements Shell {
 					new FileReader(commandFile)) : new BufferedReader(
 					new InputStreamReader(System.in));
 		} catch (IOException e) {
-			//this.logger.info(cr);
+			Activator.getDefault().log(e);
 		}
 
 		this.offlineManager = new OfflineManager(this, this.toolName);
@@ -157,39 +151,8 @@ public class SingleSensorShell implements Shell {
 		try {
 			recoverOfflineData();
 		} catch (SensorShellException e) {
-			//this.logger.warning("Error recovering offline data.");
+			Activator.getDefault().log("Error recovering offline data", e);
 		}
-	}
-
-	private void initializeLogger() {
-		try {
-			// First, create the logs directory.
-			// TODO directory
-			File logDir = new File("", "/logs/");
-			boolean dirOk = logDir.mkdirs();
-			if (!dirOk && !logDir.exists()) {
-			throw new RuntimeException("mkdirs() failed");
-			}
-
-			// Now set up logging to a file in that directory.
-			this.logger = Logger.getLogger("org.hackystat.sensorshell-"
-			+ this.toolName);
-			this.logger.setUseParentHandlers(false);
-			String fileName = logDir.getAbsolutePath() + "/" + this.toolName
-			+ ".%u.log";
-			FileHandler handler = new FileHandler(fileName, 500000, 1, true);
-			handler.setFormatter(this.oneLineFormatter );
-			this.logger.addHandler(handler);
-			// Add a couple of newlines to the log file to distinguish new shell
-			// sessions.
-			logger.info(cr + cr);
-			// Now set the logging level based upon the SensorShell Property.
-			logger.setLevel(this.sensorProperties.getLoggingLevel());
-			logger.getHandlers()[0].setLevel(this.sensorProperties
-			.getLoggingLevel());
-			} catch (Exception e) {
-			System.out.println("Error initializing SensorShell logger:\n" + e);
-			}
 	}
 
 	/**
@@ -226,7 +189,7 @@ public class SingleSensorShell implements Shell {
 			this.println("Not checking for offline data: Server not available.");
 		}
 	}
-	
+
 	/**
 	 * Process a single input string representing a command.
 	 * 
@@ -242,7 +205,7 @@ public class SingleSensorShell implements Shell {
 		}
 		// Log the command if we're not running interactively.
 		if (!this.isInteractive) {
-			//logger.info("#> " + inputString);
+			// logger.info("#> " + inputString);
 		}
 		// Process quit command.
 		if ("quit".equals(inputString)) {
@@ -303,7 +266,7 @@ public class SingleSensorShell implements Shell {
 			try {
 				this.sensorDataCommand.add(keyValMap);
 			} catch (Exception e) {
-				this.println("Error: Can't parse the Timestamp or Runtime arguments.");
+				Activator.getDefault().log(e);
 			}
 			return;
 		}
@@ -314,7 +277,7 @@ public class SingleSensorShell implements Shell {
 			try {
 				resourceCheckSum = Integer.parseInt(resourceCheckSumString);
 			} catch (Exception e) {
-				this.println("Error: Can't parse the checksum into an integer.");
+				Activator.getDefault().log(e);
 				return;
 			}
 			argList.remove(0);
@@ -332,7 +295,7 @@ public class SingleSensorShell implements Shell {
 			try {
 				this.sensorDataCommand.statechange(resourceCheckSum, keyValMap);
 			} catch (Exception e) {
-				this.println("Error: Can't parse the Timestamp or Runtime arguments.");
+				Activator.getDefault().log(e);
 			}
 			return;
 		}
@@ -401,16 +364,16 @@ public class SingleSensorShell implements Shell {
 	/**
 	 * Returns a string with the next line of input from the user. If input
 	 * errors, returns the string "quit".
-	 *
+	 * 
 	 * @return A string with user input.
 	 */
 	String readLine() {
 		try {
 			String line = this.bufferedReader.readLine();
-			//logger.info(line);
+			// logger.info(line);
 			return (line == null) ? "" : line;
 		} catch (IOException e) {
-			// logger.info(cr);
+			Activator.getDefault().log(e);
 			return "quit";
 		}
 	}
@@ -423,7 +386,7 @@ public class SingleSensorShell implements Shell {
 	 *            The line to be printed.
 	 */
 	public final synchronized void println(String line) {
-		//logger.info(line + cr);
+		// logger.info(line + cr);
 		if (isInteractive) {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(
 					"MM/dd HH:mm:ss", Locale.US);
@@ -433,12 +396,12 @@ public class SingleSensorShell implements Shell {
 
 	/**
 	 * Prints out the line without newline if in interactive mode.
-	 *
+	 * 
 	 * @param line
 	 *            The line to be printed.
 	 */
 	public final synchronized void print(String line) {
-		//logger.info(line);
+		// logger.info(line);
 		if (isInteractive) {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(
 					"MM/dd HH:mm:ss", Locale.US);
@@ -482,15 +445,6 @@ public class SingleSensorShell implements Shell {
 	 */
 	public synchronized boolean isInteractive() {
 		return this.isInteractive;
-	}
-
-	/**
-	 * Returns the Logger associated with this sensorshell.
-	 * 
-	 * @return The Logger.
-	 */
-	public synchronized Logger getLogger() {
-		return this.logger;
 	}
 
 	/** {@inheritDoc} */

@@ -7,7 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
@@ -40,7 +39,12 @@ import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
  * Provides a high-level interface for Clients wishing to communicate with a
  * SensorBase.
  * 
+ * Is now a singleton class, accessed by getInstance().
+ * 
+ * Adapted from Hackystat project.
+ * 
  * @author Philip Johnson
+ * @author Joseph Luke
  * 
  */
 public class SensorBaseClient {
@@ -54,14 +58,14 @@ public class SensorBaseClient {
 	private Preference<MediaType> htmlMedia = new Preference<MediaType>(
 			MediaType.TEXT_HTML);
 
+	public final static String SENSORBASECLIENT_TIMEOUT_KEY = "CLIENT_TIMEOUT";
+
 	/** To facilitate debugging of problems using this system. */
 	private boolean isTraceEnabled = false;
 
 	/**
-	 * The System property key used to retrieve the default timeout value in
-	 * milliseconds.
+	 * The default timeout for the Restlet client.
 	 */
-	public static final String SENSORBASECLIENT_TIMEOUT_KEY = "sensorbaseclient.timeout";
 	private static final int DEFAULT_TIMEOUT = 2000;
 
 	private SensorBaseClient() {
@@ -69,13 +73,18 @@ public class SensorBaseClient {
 		try {
 			client.start();
 		} catch (Exception e) {
-			e.printStackTrace();
+			Activator.getDefault().log(e);
 		}
 		setClientTimeout(DEFAULT_TIMEOUT);
 		Activator.getDefault().getPreferenceStore()
 				.addPropertyChangeListener(new DevEventPreferenceListener());
 	}
 
+	/**
+	 * Returns the singleton instance.
+	 * 
+	 * @return The singleton SensorBaseClient instance.
+	 */
 	public static SensorBaseClient getInstance() {
 		if (theInstance == null) {
 			theInstance = new SensorBaseClient();
@@ -105,7 +114,8 @@ public class SensorBaseClient {
 	}
 
 	/**
-	 * Returns the user UUID from this server based on their email.
+	 * Retrieves a user UUID, either from preferences, or from the server if not
+	 * in preferences.
 	 * 
 	 * @param email
 	 *            The user email.
@@ -141,7 +151,7 @@ public class SensorBaseClient {
 		try {
 			responseText = response.getEntity().getText();
 		} catch (IOException e) {
-			e.printStackTrace();
+			Activator.getDefault().log(e);
 			return null;
 		}
 		if (responseText == null || !responseText.contains("<uuid>")) {
@@ -157,6 +167,18 @@ public class SensorBaseClient {
 		}
 	}
 
+	/**
+	 * Retrieves a studentProject UUID from the file in the project's location,
+	 * or from the server if not present. Also sets the preference value for
+	 * whether or not we should push events and code snapshots to the server or
+	 * hold them locally.
+	 * 
+	 * @param projectUri
+	 *            The URI for the project directory.
+	 * @return The project UUID
+	 * @throws SensorBaseClientException
+	 *             If the server does not successfully respond.
+	 */
 	public synchronized UUID retrieveStudentProject(String projectUri)
 			throws SensorBaseClientException {
 		// Check the file location to see if we already have the studentProject
@@ -176,10 +198,10 @@ public class SensorBaseClient {
 					return projectUuid;
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			}
 		} catch (FileNotFoundException e1) {
-			// e1.printStackTrace();
+			Activator.getDefault().log(e1);
 		}
 
 		// We don't have the UUID in the file system, or the file's projectUri
@@ -200,13 +222,20 @@ public class SensorBaseClient {
 		try {
 			responseText = response.getEntity().getText();
 		} catch (IOException e) {
-			e.printStackTrace();
+			Activator.getDefault().log(e);
 			return null;
 		}
 		if (responseText == null || !responseText.contains("<uuid>")) {
 			return null;
 		} else {
 			String uuidString = parseUUID(responseText);
+			String pushLogsString = responseText.split("<pushLogs>")[1]
+					.split("</pushLogs>")[0];
+			Activator
+					.getDefault()
+					.getPreferenceStore()
+					.setValue(IPreferencesConstants.PUSH_TO_SERVER,
+							Boolean.parseBoolean(pushLogsString));
 			// Create new file containing UUID and projectUri
 			File studentProjectUUIDFileToCreate = new File(projectUri
 					+ "/.uuid");
@@ -221,7 +250,7 @@ public class SensorBaseClient {
 				fw.close();
 				out.close();
 			} catch (IOException e) {
-				// e.printStackTrace();
+				Activator.getDefault().log(e);
 			}
 			return UUID.fromString(uuidString);
 		}
@@ -251,25 +280,28 @@ public class SensorBaseClient {
 	 */
 	public synchronized void putSensorData(SensorData data)
 			throws SensorBaseClientException {
-		// Retrieve the stored user UUID from preferences, or from the server if
-		// not present.
-		String userUuid = retrieveUser(getEmail()).toString();
+		if (getPushToServer()) {
+			// Retrieve the stored user UUID from preferences, or from the
+			// server if
+			// not present.
+			String userUuid = retrieveUser(getEmail()).toString();
 
-		String studentProjectUuid = retrieveStudentProject(data.getProjectUri())
-				.toString();
+			String studentProjectUuid = retrieveStudentProject(
+					data.getProjectUri()).toString();
 
-		String requestString = "postSensorData?studentProjectUuid="
-				+ studentProjectUuid + "&userUuid=" + userUuid + "&time="
-				+ data.timestamp + "&runtime=" + data.runtime + "&tool="
-				+ data.tool + "&sensorDataType=" + data.sensorDataType
-				+ "&uri=" + data.uri;
-		if (data.findProperty("CommitHash") != null) {
-			requestString += "&CommitHash="
-					+ data.findProperty("CommitHash").value;
-		}
-		Response response = makeRequest(Method.GET, requestString, null);
-		if (!response.getStatus().isSuccess()) {
-			throw new SensorBaseClientException(response.getStatus());
+			String requestString = "postSensorData?studentProjectUuid="
+					+ studentProjectUuid + "&userUuid=" + userUuid + "&time="
+					+ data.timestamp + "&runtime=" + data.runtime + "&tool="
+					+ data.tool + "&sensorDataType=" + data.sensorDataType
+					+ "&uri=" + data.uri;
+			if (data.findProperty("CommitHash") != null) {
+				requestString += "&CommitHash="
+						+ data.findProperty("CommitHash").value;
+			}
+			Response response = makeRequest(Method.GET, requestString, null);
+			if (!response.getStatus().isSuccess()) {
+				throw new SensorBaseClientException(response.getStatus());
+			}
 		}
 	}
 
@@ -284,25 +316,29 @@ public class SensorBaseClient {
 	 */
 	public synchronized void putSensorDataBatch(SensorDatas batch)
 			throws SensorBaseClientException {
-		// Retrieve the stored user UUID from preferences, or from the server if
-		// not present.
-		String userUuid = retrieveUser(getEmail()).toString();
+		if (getPushToServer()) {
+			// Retrieve the stored user UUID from preferences, or from the
+			// server if
+			// not present.
+			String userUuid = retrieveUser(getEmail()).toString();
 
-		for (SensorData data : batch.sensorData) {
-			String studentProjectUuid = retrieveStudentProject(
-					data.getProjectUri()).toString();
-			String requestString = "postSensorData?studentProjectUuid="
-					+ studentProjectUuid + "&userUuid=" + userUuid + "&time="
-					+ data.timestamp + "&runtime=" + data.runtime + "&tool="
-					+ data.tool + "&sensorDataType=" + data.sensorDataType
-					+ "&uri=" + data.uri;
-			if (data.findProperty("CommitHash") != null) {
-				requestString += "&commitHash="
-						+ data.findProperty("CommitHash").value;
-			}
-			Response response = makeRequest(Method.GET, requestString, null);
-			if (!response.getStatus().isSuccess()) {
-				throw new SensorBaseClientException(response.getStatus());
+			for (SensorData data : batch.sensorData) {
+				String studentProjectUuid = retrieveStudentProject(
+						data.getProjectUri()).toString();
+				String requestString = "postSensorData?studentProjectUuid="
+						+ studentProjectUuid + "&userUuid=" + userUuid
+						+ "&time=" + data.timestamp + "&runtime="
+						+ data.runtime + "&tool=" + data.tool
+						+ "&sensorDataType=" + data.sensorDataType + "&uri="
+						+ data.uri;
+				if (data.findProperty("CommitHash") != null) {
+					requestString += "&commitHash="
+							+ data.findProperty("CommitHash").value;
+				}
+				Response response = makeRequest(Method.GET, requestString, null);
+				if (!response.getStatus().isSuccess()) {
+					throw new SensorBaseClientException(response.getStatus());
+				}
 			}
 		}
 	}
@@ -322,8 +358,6 @@ public class SensorBaseClient {
 	 */
 	private Response makeRequest(Method method, String requestString,
 			Representation entity) {
-		System.out.println("requesting from:" + getEventUrl()
-				+ " with string: " + requestString);
 		Reference reference = new Reference(getEventUrl() + requestString);
 		Request request = (entity == null) ? new Request(method, reference)
 				: new Request(method, reference, entity);
@@ -335,7 +369,7 @@ public class SensorBaseClient {
 				try {
 					System.out.println(entity.getText());
 				} catch (Exception e) {
-					System.out.println("  Problems with getText() on entity.");
+					Activator.getDefault().log(e);
 				}
 			}
 		}
@@ -361,11 +395,25 @@ public class SensorBaseClient {
 				.add("socketTimeout", new Integer(milliseconds).toString());
 	}
 
+	/**
+	 * Commits a project locally to its git repo and pushes it to the server if
+	 * possible.
+	 * 
+	 * @param projectUri
+	 *            The URI of the project directory.
+	 * @param git
+	 *            The JGit Git object to use for Git actions.
+	 * @param message
+	 *            The commit message to use.
+	 * @param needsPull
+	 *            Whether we need to pull from the server first to prevent merge
+	 *            issues.
+	 * @return The Commit object itself so that we can pull its hash and store
+	 *         this in its associated event.
+	 */
 	public RevCommit commitSnapshot(String projectUri, Git git, String message,
 			boolean needsPull) {
-		System.out.println("attempting to push from project " + projectUri
-				+ " in sensorbaseclient");
-		if (isPingable()) {
+		if (isPingable() && getPushToServer()) {
 			try {
 				String studentProjectUuid = retrieveStudentProject(projectUri)
 						.toString();
@@ -384,14 +432,12 @@ public class SensorBaseClient {
 						this.retrieveUser(getEmail()).toString(),
 						studentProjectUuid);
 
-				System.out.println(gitUrl);
 
 				RevCommit commit = git.commit().setMessage(message).call();
 				git.checkout().addPath(".gitignore").call();
 				// Pull files from server if this is the first time we've used
 				// this repository.
 				if (needsPull) {
-					System.out.println("pulling first");
 					git.pull().setRemote("origin").setCredentialsProvider(cred)
 							.call();
 					// Update .gitignore file to include /bin directory
@@ -406,7 +452,7 @@ public class SensorBaseClient {
 						out.close();
 						fw.close();
 					} catch (IOException e) {
-						e.printStackTrace();
+						Activator.getDefault().log(e);
 					}
 					git.add().addFilepattern(".gitignore").call();
 					git.rm().addFilepattern("README.txt").call();
@@ -416,21 +462,21 @@ public class SensorBaseClient {
 						.call();
 				return commit;
 			} catch (GitAPIException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			} catch (SensorBaseClientException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			} catch (IOException e1) {
-				e1.printStackTrace();
+				Activator.getDefault().log(e1);
 			}
 		}
-		// If no connection, still need to make local commit and preserve
-		// needsPull value.
+		// If no connection or only storing locally, still need to make local
+		// commit and preserve needsPull value.
 		else {
 			RevCommit commit = null;
 			try {
 				commit = git.commit().setMessage(message).call();
 			} catch (GitAPIException e) {
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			}
 			// If we needed a pull, but had no connection, create a .needspull
 			// file so we can
@@ -441,7 +487,7 @@ public class SensorBaseClient {
 					try {
 						needsPullFile.createNewFile();
 					} catch (IOException e) {
-						e.printStackTrace();
+						Activator.getDefault().log(e);
 					}
 				}
 			}
@@ -450,6 +496,14 @@ public class SensorBaseClient {
 		return null;
 	}
 
+	/**
+	 * Informs the server that a project was submitted to Web-CAT.
+	 * 
+	 * @param projectUri
+	 *            The URI of the project directory.
+	 * @throws SensorBaseClientException
+	 *             If the server does not respond.
+	 */
 	public void submissionHappened(String projectUri)
 			throws SensorBaseClientException {
 		UUID userUuid = retrieveUser(getEmail());
@@ -460,40 +514,58 @@ public class SensorBaseClient {
 		if (!response.getStatus().isSuccess()) {
 			throw new SensorBaseClientException(response.getStatus());
 		}
+		Activator.getDefault().getPreferenceStore()
+				.setValue(IPreferencesConstants.PUSH_TO_SERVER, true);
 	}
 
+	/**
+	 * Informs the server that a starter project was downloaded.
+	 * 
+	 * @param projectUri
+	 *            The URI of the project directory.
+	 * @param projectName
+	 *            The name of the project (i.e. the assignment it is for).
+	 * @throws SensorBaseClientException
+	 *             If the server does not respond.
+	 */
 	public void downloadStarterProjectHappened(String projectUri,
-			String projectName, String courseName)
-			throws SensorBaseClientException {
-		String requestString = "projectDownload?projectUri=" + projectUri
-				+ "&projectName=" + projectName + "&userUuid="
-				+ retrieveUser(getEmail()).toString() + "&courseName="
-				+ courseName;
-		Response response = makeRequest(Method.GET, requestString, null);
-		if (!response.getStatus().isSuccess()) {
-			throw new SensorBaseClientException(response.getStatus());
-		}
-		String responseText;
+			String projectName) throws SensorBaseClientException {
+		if (getPushToServer()) {
+			String requestString = "projectDownload?projectUri=" + projectUri
+					+ "&projectName=" + projectName + "&userUuid="
+					+ retrieveUser(getEmail()).toString();
+			Response response = makeRequest(Method.GET, requestString, null);
+			if (!response.getStatus().isSuccess()) {
+				throw new SensorBaseClientException(response.getStatus());
+			}
+			String responseText;
 
-		try {
-			responseText = response.getEntity().getText();
-			String uuidString = parseUUID(responseText);
-			// Create new file containing UUID and projectUri
-			File studentProjectUUIDFileToCreate = new File(projectUri
-					+ "/.uuid");
-			FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
-			BufferedWriter out = new BufferedWriter(fw);
-			out.write(uuidString);
-			out.newLine();
-			out.write(projectUri);
-			out.flush();
-			fw.close();
-			out.close();
-		} catch (IOException e) {
-			// e.printStackTrace();
+			try {
+				responseText = response.getEntity().getText();
+				String uuidString = parseUUID(responseText);
+				// Create new file containing UUID and projectUri
+				File studentProjectUUIDFileToCreate = new File(projectUri
+						+ "/.uuid");
+				FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
+				BufferedWriter out = new BufferedWriter(fw);
+				out.write(uuidString);
+				out.newLine();
+				out.write(projectUri);
+				out.flush();
+				fw.close();
+				out.close();
+			} catch (IOException e) {
+				Activator.getDefault().log(e);
+			}
 		}
 	}
 
+	/**
+	 * Inform the server that an exception occurred in the plugin.
+	 * 
+	 * @param e
+	 *            The exception to log.
+	 */
 	public void pluginExceptionHappened(Exception e) {
 		try {
 			String userUuid = retrieveUser(getEmail()).toString();
@@ -518,9 +590,15 @@ public class SensorBaseClient {
 					+ stackTrace;
 			makeRequest(Method.GET, requestString, null);
 		} catch (SensorBaseClientException e1) {
+			// Don't want to loop infinitely, so don't log this exception.
 		}
 	}
 
+	/**
+	 * Determine whether the Web-CATURL from preferences is pingable.
+	 * 
+	 * @return Whether the Web-CAT URL is pingable.
+	 */
 	public boolean isPingable() {
 		try {
 			HttpURLConnection connection = (HttpURLConnection) new URL(
@@ -532,12 +610,15 @@ public class SensorBaseClient {
 				return false;
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Activator.getDefault().log(e);
 			return false;
 		}
 		return true;
 	}
 
+	/**
+	 * @return The base host name for Web-CAT.
+	 */
 	public String getHost() {
 		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
 		String submitUrl = store.getString(IPreferencesConstants.SUBMIT_URL);
@@ -545,30 +626,53 @@ public class SensorBaseClient {
 		return host;
 	}
 
+	/**
+	 * @return The Web-CAT URL for DevEventTracker subsytem.
+	 */
 	public String getEventUrl() {
 		return getHost() + "/wa/event/";
 	}
 
+	/**
+	 * @return The Web-CAT url for Git requests.
+	 */
 	public String getGitUrl() {
 		return getHost() + "/git/";
 	}
 
+	/**
+	 * @return The email stored in preferences.
+	 */
 	public String getEmail() {
 		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		String email = store.getString(IPreferencesConstants.STORED_EMAIL);
-		return email;
+		return store.getString(IPreferencesConstants.STORED_EMAIL);
 	}
 
+	/**
+	 * @return Whether we should push events and code snapshots to the server.
+	 */
+	public boolean getPushToServer() {
+		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+		return store.getBoolean(IPreferencesConstants.PUSH_TO_SERVER);
+	}
+
+	/**
+	 * Listens for preference changes in the preference store.
+	 * 
+	 * @author Joseph Luke
+	 */
 	public class DevEventPreferenceListener implements IPropertyChangeListener {
 
+		/**
+		 * Listens for a newly-entered user email so we can inform the server
+		 * and associate this work with a user.
+		 */
 		public void propertyChange(PropertyChangeEvent event) {
 			if (event.getProperty().equals(IPreferencesConstants.STORED_EMAIL)) {
 				if (event.getOldValue().equals("")) {
 					// If we already had a UUID stored and the user email was
 					// just entered,
 					// we need to send a confirmation action to the server.
-					System.out.println("just changed email to "
-							+ event.getNewValue());
 					String storedUserUuid = Activator.getDefault()
 							.getPreferenceStore()
 							.getString(IPreferencesConstants.STORED_USER_UUID);
@@ -583,7 +687,7 @@ public class SensorBaseClient {
 							try {
 								responseText = response.getEntity().getText();
 							} catch (IOException e) {
-								e.printStackTrace();
+								Activator.getDefault().log(e);
 							}
 							if (responseText != null
 									&& responseText.contains("<uuid>")) {
@@ -602,10 +706,14 @@ public class SensorBaseClient {
 		}
 	}
 
+	/**
+	 * Stops the Restlet client.
+	 */
 	public void stopClient() {
 		try {
 			client.stop();
 		} catch (Exception e) {
+			Activator.getDefault().log(e);
 		}
 	}
 }

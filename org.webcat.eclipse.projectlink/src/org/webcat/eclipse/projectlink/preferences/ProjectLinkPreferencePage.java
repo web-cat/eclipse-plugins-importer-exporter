@@ -25,6 +25,7 @@ import static org.webcat.eclipse.projectlink.util.SWTUtil.setText;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.swt.SWT;
@@ -47,6 +48,7 @@ import org.webcat.eclipse.projectlink.i18n.Messages;
  * plug-in.
  * 
  * @author Tony Allevato
+ * @author Joseph Luke
  */
 public class ProjectLinkPreferencePage extends PreferencePage implements
 		IWorkbenchPreferencePage {
@@ -55,6 +57,8 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 	private Text username;
 	private Text mailServer;
 	private Text downloadURL;
+
+	private boolean popupHappenedThisLoad = false;
 
 	// ~ Constructors ..........................................................
 
@@ -232,8 +236,6 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 	// ----------------------------------------------------------
 	@Override
 	public boolean performOk() {
-
-		// TODO validation on URLS (Use URL class)
 		// Validate each URL is not malformed (missing or incorrect protocol).
 
 		// Validate downloadURL.
@@ -247,7 +249,6 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 		getPreferenceStore().setValue(IPreferencesConstants.STORED_USERNAME,
 				getText(username));
 
-		// TODO Do I need to validate this the same way?
 		validateURL(mailServer, IPreferencesConstants.OUTGOING_MAIL_SERVER);
 
 		// getPreferenceStore().setValue(IPreferencesConstants.WEBCAT_URL,
@@ -262,10 +263,20 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 		// getPreferenceStore().setValue(IPreferencesConstants.URL_TYPE,
 		// IPreferencesConstants.URL_TYPE_WEBCAT);
 		// }
-
+		popupHappenedThisLoad = false;
 		return super.performOk();
 	}
 
+	/**
+	 * Validates the URL contained in the given text field and stores it into
+	 * the given preference field if it is well-formed, otherwise shows a
+	 * notification to the user (but only once per performOk()).
+	 * 
+	 * @param textField
+	 *            The textField whose value we are validating.
+	 * @param prefConstant
+	 *            The preference store key to store the value into.
+	 */
 	private void validateURL(Text textField, String prefConstant) {
 		IPreferenceStore store = getPreferenceStore();
 
@@ -281,7 +292,13 @@ public class ProjectLinkPreferencePage extends PreferencePage implements
 					textField.setText("http://" + validationText);
 					store.setValue(prefConstant, "http://" + validationText);
 				} catch (MalformedURLException e1) {
-					// TODO Really malformed, what to do here?
+					// Notification just once for multiple malformed URLs.
+					if (!popupHappenedThisLoad) {
+						MessageDialog.openInformation(getShell(),
+								"Malformed URL",
+								"A URL you entered was malformed.");
+						popupHappenedThisLoad = true;
+					}
 				}
 			}
 		}

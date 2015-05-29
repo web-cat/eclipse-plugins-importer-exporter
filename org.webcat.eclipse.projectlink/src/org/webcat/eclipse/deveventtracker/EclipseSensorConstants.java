@@ -4,6 +4,8 @@ package org.webcat.eclipse.deveventtracker;
  * Defines constants for the Eclipse sensor to use. PMD complains that
  * too many repeated literals are used so refactor them out.
  *
+ * Imported from Hackystat project.
+ *
  * @author Hongbing Kou
  */
 public class EclipseSensorConstants {

@@ -172,17 +172,19 @@ public class DownloadAssignmentPage extends WizardPage
 					catch (IOException e)
 					{
 						showErrorDialog(e);
+						Activator.getDefault().log(e);
 					}
 				}
 			});
 		}
 		catch (InterruptedException e)
 		{
-			// Do nothing.
+			Activator.getDefault().log(e);
 		}
 		catch (InvocationTargetException e)
 		{
 			showErrorDialog(e);
+			Activator.getDefault().log(e);
 		}
 	}
 
