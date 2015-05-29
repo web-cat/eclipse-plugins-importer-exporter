@@ -1,7 +1,5 @@
 package org.webcat.eclipse.deveventtracker.sensorshell;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.Map.Entry;
@@ -24,23 +22,7 @@ import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
  * @author Philip M. Johnson, Aaron A. Kagawa
  */
 public class SensorShellProperties {
-  
-  /**
-   * The property key retrieving an URL indicating the location of the SensorBase host. 
-   * This a required property; if not supplied, instantiation will fail.
-   * Example: "http://dasha.ics.hawaii.edu:9876/sensorbase".
-   * No default value. 
-   */
-  public static final String SENSORSHELL_SENSORBASE_HOST_KEY = "sensorshell.sensorbase.host";
-  
-  /**
-   * The property key retrieving the user account associated with the SensorBase.
-   * This a required property; if not supplied, instantiation will fail.
-   * Example: "johnson@hawaii.edu".
-   * No default value.
-   */
-  public static final String SENSORSHELL_SENSORBASE_USER_KEY = "sensorshell.sensorbase.user";
-  
+	
   /**
    * The property key retrieving the timeout value (in seconds) for SensorShell HTTP requests.
    * Default: "10".
@@ -177,12 +159,6 @@ public class SensorShellProperties {
   private double autosendTimeInterval = 1.0;
   /** The default maximum number of buffered instances is 250. */
   private int autosendMaxBuffer = 250;
-  /** Holds the required sensorbase host. */
-  private String sensorBaseHost = null;
-  /** Holds the required user. */
-  private String user = null;
-  /** Holds the required password. */
-  private String password = null;
   /** Holds the default logging level. */
   private Level loggingLevel = Level.INFO;
   
@@ -197,24 +173,16 @@ public class SensorShellProperties {
    * @param email The user's email.   * @throws SensorShellException If the SensorProperties instance cannot be 
    * instantiated due to a missing host, user, and/or password properties.
    */
-  public SensorShellProperties(String host, String email) 
+  public SensorShellProperties() 
   throws SensorShellException {
     setDefaultSensorShellProperties(true);
-    this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_HOST_KEY, host);
-    this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_USER_KEY, email);
-    this.sensorBaseHost = host;
-    this.user = email;
     validateProperties();
   }
   
-  public SensorShellProperties(Properties props, String host, String email) 
+  public SensorShellProperties(Properties props) 
   throws SensorShellException {
     setDefaultSensorShellProperties(true);
-    this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_HOST_KEY, host);
-    this.sensorProps.setProperty(SENSORSHELL_SENSORBASE_USER_KEY, email);
     this.sensorProps.putAll(props);
-    this.sensorBaseHost = host;
-    this.user = email;
     validateProperties();
   }
 
@@ -494,31 +462,6 @@ public class SensorShellProperties {
     return value;
   }
 
-  /**
-   * Returns the sensorbase host, such as "http://dasha.ics.hawaii.edu:9876/sensorbase".
-   * @return The sensorbase host.
-   */
-  public String getSensorBaseHost() {
-    return this.sensorBaseHost;
-  }
-
-
-  /**
-   * Returns the password for this user, such as "xu876csld".
-   * @return The user password.
-   */
-  public String getSensorBasePassword() {
-    return this.password;
-  }
-
-  /**
-   * Returns the account for this user, such as "johnson@hawaii.edu".
-   * @return The user account.
-   */
-  public String getSensorBaseUser() {
-    return this.user;
-  }
-  
   /**
    * Returns the AutoSend time interval, such as 1.0.
    * @return The autosend interval.

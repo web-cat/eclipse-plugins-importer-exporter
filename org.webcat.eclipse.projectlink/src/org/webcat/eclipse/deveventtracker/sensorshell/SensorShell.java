@@ -3,9 +3,6 @@ package org.webcat.eclipse.deveventtracker.sensorshell;
 import java.io.File;
 import java.util.Map;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
 
@@ -60,7 +57,6 @@ public class SensorShell implements Shell {
    */
   public SensorShell(SensorShellProperties properties, boolean isInteractive, String tool) {
     this(properties, isInteractive, tool, null);
-	System.out.println(properties.getSensorBaseHost() + ", " + properties.getSensorBaseUser());
   }
 
 
@@ -123,14 +119,5 @@ public class SensorShell implements Shell {
   public void statechange(long resourceCheckSum, Map<String, String> keyValMap) throws Exception {
     this.shell.statechange(resourceCheckSum, keyValMap);
   }
-
-
-  public void commitSnapshot(String projectUri, Git git, boolean needsPull)
-  {
-	  this.shell.commitSnapshot(projectUri, git, needsPull);
-  }
-  
-
-
 }
 

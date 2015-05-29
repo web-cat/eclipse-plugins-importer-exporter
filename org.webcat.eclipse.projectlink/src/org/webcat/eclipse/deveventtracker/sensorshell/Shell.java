@@ -2,9 +2,6 @@ package org.webcat.eclipse.deveventtracker.sensorshell;
 
 import java.util.Map;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 
 /**
@@ -65,8 +62,6 @@ public interface Shell {
    * @throws SensorShellException If problems occur sending the data.  
    */
   public int send() throws SensorShellException;
-  
-  public void commitSnapshot(String projectUri, Git git, boolean needsPull);
   
   /**
    * Invokes quit() on this Shell, which invokes a final send() and closes any

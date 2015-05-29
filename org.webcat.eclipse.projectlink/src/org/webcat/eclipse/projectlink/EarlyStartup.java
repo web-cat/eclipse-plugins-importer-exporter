@@ -8,7 +8,8 @@ public class EarlyStartup implements IStartup{
 	 * This gets called on Eclipse startup. Use it to instantiate sensors.
 	 */
 	public void earlyStartup() {
-		Activator activator = new Activator();
+		System.out.println("Early startup happening.");
+		Activator.getDefault();
 	}
 
 }

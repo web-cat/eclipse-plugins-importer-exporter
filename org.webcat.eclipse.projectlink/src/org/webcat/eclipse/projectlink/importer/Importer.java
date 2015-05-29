@@ -50,6 +50,7 @@ import org.eclipse.core.runtime.preferences.IPreferenceFilter;
 import org.eclipse.core.runtime.preferences.IPreferencesService;
 import org.eclipse.swt.widgets.Display;
 import org.w3c.dom.Document;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.projectlink.ProjectLinkException;
 import org.webcat.eclipse.projectlink.importer.model.ImportNode;
 import org.webcat.eclipse.projectlink.importer.model.ImporterManifest;
@@ -454,8 +455,11 @@ public class Importer
 		        
 		        tracker.setProjectNameForUri(project.getURI(),
 		        		description.getName());
+		        
 	        }
-	
+	        // Send an event to the server indicating that a starter project has been downloaded.
+			SensorBaseClient.getInstance().downloadStarterProjectHappened(workspaceProject.getDescription().getLocationURI().getPath(), description.getName(), getRoot().getName());
+			
 	        tempFile.delete();
     	}
     	catch (Exception e)

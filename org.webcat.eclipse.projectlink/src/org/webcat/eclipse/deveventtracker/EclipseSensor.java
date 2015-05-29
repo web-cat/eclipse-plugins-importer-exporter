@@ -1,14 +1,14 @@
 package org.webcat.eclipse.deveventtracker;
 
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CLASS_NAME;
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_METHODS;
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_SIZE;
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_STATEMENTS;
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_ASSERTIONS;
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_METHODS;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.*;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -30,10 +30,8 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageDeclaration;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
@@ -53,10 +51,10 @@ import org.webcat.eclipse.deveventtracker.addon.BuildErrorSensor;
 import org.webcat.eclipse.deveventtracker.addon.DebugSensor;
 import org.webcat.eclipse.deveventtracker.addon.JavaStatementMeter;
 import org.webcat.eclipse.deveventtracker.addon.JavaStructureChangeDetector;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
-import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
@@ -158,6 +156,8 @@ public class EclipseSensor {
 	/** Keep track of the last buffer trans data in case of the repeation. */
 	private String latestBuffTrans = "";
 
+	private static Integer JLSVersion = null;
+	
 	/**
 	 * Provides instantiation of SensorProperties, which has information in the
 	 * sensor.properties file, and executes <code>doCommand</code> to activate
@@ -173,7 +173,7 @@ public class EclipseSensor {
 		this.buffTransTimerTask = new BuffTransTimertask();
 
 		// Load sensor's setting.
-		this.hotDeploySensorShell();
+		this.sensorShellWrapper = new SensorShellWrapper(new SensorShellProperties());
 
 		// Adds this EclipseSensorPlugin instance to IResourceChangeListener
 		// so that project event and file save event is notified.
@@ -191,7 +191,6 @@ public class EclipseSensor {
 		// Adds element changed listener to get the corresponding change of
 		// refactoring.
 		JavaCore.addElementChangedListener(new JavaStructureChangeDetector(this));
-
 		initialize();
 	}
 
@@ -212,43 +211,6 @@ public class EclipseSensor {
 		return theInstance;
 	}
 
-	/**
-	 * Deploy the sensorshell by delegating the calls to SensorShellWrapper.
-	 * 
-	 * @throws SensorShellException
-	 *             Sensorshell exception.
-	 */
-	public synchronized void hotDeploySensorShell() throws SensorShellException {
-		SensorShellProperties sensorShellProperties = buildProperties();
-		this.sensorShellWrapper = new SensorShellWrapper(sensorShellProperties);
-	}
-
-	/**
-	 * Build sensor properties out from user's preference.
-	 * 
-	 * @throws SensorShellException
-	 *             Sensorshell properties problem.
-	 * @return Sensorshell properties.
-	 */
-	private SensorShellProperties buildProperties() throws SensorShellException {
-		Activator plugin = Activator.getDefault();
-		IPreferenceStore store = plugin.getPreferenceStore();
-
-		String host = store.getString(IPreferencesConstants.SUBMIT_URL);
-		host = host.split("/wa/")[0];
-		String email = store.getString(IPreferencesConstants.STORED_EMAIL);
-
-		if (host == null || host.equals("")) {
-			host = "dummyHost";
-		}
-		if (email == null || email.equals("")) {
-			email = "dummyUser";
-		}
-		SensorShellProperties sensorShellProperties = new SensorShellProperties(
-				host, email);
-
-		return sensorShellProperties;
-	}
 
 	/**
 	 * Initializes sensor and JUnitListener instance if the sensor is enabled.
@@ -547,7 +509,7 @@ public class EclipseSensor {
 	private JavaStatementMeter measureJavaFile(IFile file) {
 		// Compute number of tests and assertions to this file.
 		ICompilationUnit cu = (ICompilationUnit) JavaCore.create(file);
-		ASTParser parser = ASTParser.newParser(AST.JLS4);
+		ASTParser parser = ASTParser.newParser(EclipseSensor.getJLSVersion());
 		parser.setSource(cu);
 		parser.setResolveBindings(true);
 
@@ -556,6 +518,41 @@ public class EclipseSensor {
 		root.accept(counter);
 
 		return counter;
+	}
+
+	private static int getJLSVersion() {
+		if (EclipseSensor.JLSVersion == null)
+		{
+			try {
+				EclipseSensor.JLSVersion = 2;
+				Class<?> c = Class.forName("org.eclipse.jdt.core.dom.AST");
+				int highestVersionNumber = 2;
+				int highestVersionFieldValue = 2;
+				String currentVersionNumberString;
+				int currentVersionNumberInt;
+				for (Field f : c.getFields())
+				{
+					if(f.getName().startsWith("JLS") && !f.getName().endsWith("_INTERNAL"))
+					{
+						currentVersionNumberString = f.getName().replace("JLS", "").replace("_INTERNAL", "");
+						currentVersionNumberInt = Integer.parseInt(currentVersionNumberString);
+						if(currentVersionNumberInt > highestVersionNumber)
+						{
+							highestVersionNumber = currentVersionNumberInt;
+							highestVersionFieldValue = f.getInt(null);
+						}
+					}
+				}
+				EclipseSensor.JLSVersion = highestVersionFieldValue;
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		}
+		return EclipseSensor.JLSVersion;
 	}
 
 	/**
@@ -1139,15 +1136,15 @@ public class EclipseSensor {
 				if (((IProject) resource).isOpen()) {
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
 					EclipseSensor.this.addDevEvent(
-							EclipseSensorConstants.DEVEVENT_EDIT,
-							projectUri, projectResource, keyValueMap,
+							EclipseSensorConstants.DEVEVENT_EDIT, projectUri,
+							projectResource, keyValueMap,
 							projectResource.toString());
 
 				} else {
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Close");
 					EclipseSensor.this.addDevEvent(
-							EclipseSensorConstants.DEVEVENT_EDIT,
-							projectUri, projectResource, keyValueMap,
+							EclipseSensorConstants.DEVEVENT_EDIT, projectUri,
+							projectResource, keyValueMap,
 							projectResource.toString());
 				}
 				return false;
@@ -1198,9 +1195,6 @@ public class EclipseSensor {
 								testAssertionCount);
 					}
 
-					// EclipseSensor.this.eclipseSensorShell.doCommand("Activity",
-					// activityData);
-					// Construct message to display on Eclipse status bar.
 					URI fileResource = file.getLocationURI();
 					URI projectURI = file.getProject().getLocationURI();
 
@@ -1210,7 +1204,7 @@ public class EclipseSensor {
 
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Save");
 					String commitMessage = "File " + fileResource.getPath()
-							+ " changed at " + System.currentTimeMillis();
+							+ " changed at " + new Date(System.currentTimeMillis());
 					ObjectId hash = EclipseSensor.this.commitSnapshot(
 							projectURI.getPath(), commitMessage);
 					if (hash != null) {
@@ -1236,33 +1230,79 @@ public class EclipseSensor {
 	 */
 	public void stop() {
 		this.sensorShellWrapper.quit();
+		SensorBaseClient.getInstance().stopClient();
 	}
 
 	public ObjectId commitSnapshot(String projectUri, String message) {
 		// Here, we check to see if we have a local repository already.
 		// Otherwise, we need to create one.
-		System.out.println("committing snapshot for project: " + projectUri + " in eclipsesensor");
-		File localRepoDir = new File(projectUri);
-		if (!localRepoDir.isDirectory()) {
-			localRepoDir.mkdirs();
-		}
-		// If the directory exists, we need to pull form the server before we
-		// push
-		boolean needsPull = !(new File(projectUri, "/.git").isDirectory());
-		try {
-			Git git = Git.init().setDirectory(localRepoDir).call();
-			// Add all files in the project directory if they aren't already
-			git.add().addFilepattern(".").call();
+		if (projectUri != null) {
+			System.out.println("committing snapshot for project: " + projectUri
+					+ " in eclipsesensor");
+			File localRepoDir = new File(projectUri);
+			if (!localRepoDir.isDirectory()) {
+				localRepoDir.mkdirs();
+			}
+			// If the directory exists, we need to pull form the server before
+			// we push.
+			boolean needsPull = !(new File(projectUri, "/.git").isDirectory());
+			// If we have a .needspull file, also pass true for needsPull and
+			// delete the file.
+			if(!needsPull)
+			{
+				File needsPullFile = new File(projectUri, "/.needspull");
+				if(needsPullFile.exists())
+				{
+					needsPull = true;
+					needsPullFile.delete();
+				}
+			}
+			try {
+				Git git = Git.init().setDirectory(localRepoDir).call();
+				
+				// Create default .gitignore file if it doesn't already exist
+				File gitignore = new File(projectUri, "/.gitignore");
+				if(!gitignore.exists())
+				{
+					try {
+						gitignore.createNewFile();
+						FileWriter fw = new FileWriter(gitignore, true);
+						BufferedWriter out = new BufferedWriter(fw);
+						out.write("~*");
+						out.newLine();
+						out.write("._*");
+						out.newLine();
+						out.write(".TemporaryItems");
+						out.newLine();
+						out.write(".DS_Store");
+						out.newLine();
+						out.write("Thumbs.db");
+						out.newLine();
+						out.write("/bin/");
+						out.newLine();
+						out.flush();
+						out.close();
+						fw.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				// Add all files in the project directory
+				git.add().addFilepattern(".").call();
 
-			// Actual commit
-			RevCommit commit = git.commit().setMessage(message).call();
-			this.sensorShellWrapper.commitSnapshot(projectUri, git, needsPull);
-			git.close();
-			return commit.getId();
-		} catch (NoFilepatternException e) {
-			e.printStackTrace();
-		} catch (GitAPIException e) {
-			e.printStackTrace();
+				// Actual commit
+				 RevCommit commit = SensorBaseClient.getInstance().commitSnapshot(projectUri, git, message, needsPull);
+				git.close();
+				if (commit != null)
+				{
+					return commit.getId();
+				}
+			} catch (NoFilepatternException e) {
+				e.printStackTrace();
+			} catch (GitAPIException e) {
+				e.printStackTrace();
+			}
 		}
 		return null;
 	}

@@ -14,11 +14,8 @@ import java.util.Locale;
 import java.util.Properties;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorDatas;
-import org.webcat.eclipse.projectlink.Activator;
-import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
 /**
  * Provides a facility for: (a) persisting buffered SensorData instances locally
@@ -149,24 +146,7 @@ public class OfflineManager {
 		props.setProperty(
 				SensorShellProperties.SENSORSHELL_AUTOSEND_TIMEINTERVAL_KEY,
 				"0.0");
-		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		
-		String host = store.getString(IPreferencesConstants.SUBMIT_URL);
-		host = host.split("/wa/")[0];
-		String email = store.getString(IPreferencesConstants.STORED_EMAIL);
-
-		if (host == null || host.equals(""))
-		{
-			host = "dummyHost";
-		}
-		if (email == null || email.equals(""))
-		{
-			email = "dummyUser";
-		}
-		
-		
-		SensorShellProperties shellProps = new SensorShellProperties(props,
-				host, email);
+		SensorShellProperties shellProps = new SensorShellProperties(props);
 		// Provide a separate log file for this offline recovery.
 		String offlineTool = this.tool + "-offline-recovery";
 		// Create the offline sensor shell to be used for sending this data.

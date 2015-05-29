@@ -3,9 +3,6 @@ package org.webcat.eclipse.deveventtracker;
 import java.util.Map;
 
 import org.eclipse.jface.action.IStatusLineManager;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorPart;
@@ -45,11 +42,6 @@ public SensorShell getShell() {
    */
   SensorShellWrapper(SensorShellProperties sensorShellProperties) throws SensorShellException {
 	this.shell = new SensorShell(sensorShellProperties, false, "Eclipse");
-  }
-  
-  public void commitSnapshot(String projectUri, Git git, boolean needsPull)
-  {
-	  shell.commitSnapshot(projectUri, git, needsPull);
   }
   
   /**

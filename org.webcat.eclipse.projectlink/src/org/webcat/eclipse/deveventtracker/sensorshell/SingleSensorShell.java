@@ -16,13 +16,9 @@ import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Logger;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorshell.command.AutoSendCommand;
-import org.webcat.eclipse.deveventtracker.sensorshell.command.PingCommand;
 import org.webcat.eclipse.deveventtracker.sensorshell.command.QuitCommand;
 import org.webcat.eclipse.deveventtracker.sensorshell.command.SensorDataCommand;
 
@@ -63,12 +59,6 @@ public class SingleSensorShell implements Shell {
 	/** The logging instance for SensorShells. */
 	private Logger logger;
 
-	/** The logging formatter that adds a timestamp but doesn't add a newline. */
-	private Formatter oneLineFormatter = new OneLineFormatter(true, false);
-
-	/** The ping command. */
-	private PingCommand pingCommand;
-
 	/** The send command. */
 	private SensorDataCommand sensorDataCommand;
 
@@ -80,6 +70,8 @@ public class SingleSensorShell implements Shell {
 
 	/** The startup time for this sensorshell. */
 	private Date startTime = new Date();
+
+	private Formatter oneLineFormatter = new OneLineFormatter(true, false);
 
 	/**
 	 * Constructs a new SensorShell instance that can be provided with
@@ -140,13 +132,10 @@ public class SingleSensorShell implements Shell {
 		this.toolName = toolName;
 		this.sensorProperties = properties;
 		boolean commandFilePresent = ((commandFile != null));
-		SensorBaseClient client = new SensorBaseClient(
-				properties.getSensorBaseHost(), properties.getSensorBaseUser());
-		client.setTimeout(properties.getTimeout() * 1000);
+		SensorBaseClient client = SensorBaseClient.getInstance();
+		client.setClientTimeout(properties.getTimeout() * 1000);
 		initializeLogger();
-		this.pingCommand = new PingCommand(this, properties);
-		this.sensorDataCommand = new SensorDataCommand(this, properties,
-				this.pingCommand, client);
+		this.sensorDataCommand = new SensorDataCommand(this, properties);
 		AutoSendCommand autoSendCommand = new AutoSendCommand(this, properties);
 		this.quitCommand = new QuitCommand(this, properties, sensorDataCommand,
 				autoSendCommand);
@@ -158,7 +147,7 @@ public class SingleSensorShell implements Shell {
 					new FileReader(commandFile)) : new BufferedReader(
 					new InputStreamReader(System.in));
 		} catch (IOException e) {
-			this.logger.info(cr);
+			//this.logger.info(cr);
 		}
 
 		this.offlineManager = new OfflineManager(this, this.toolName);
@@ -168,8 +157,39 @@ public class SingleSensorShell implements Shell {
 		try {
 			recoverOfflineData();
 		} catch (SensorShellException e) {
-			this.logger.warning("Error recovering offline data.");
+			//this.logger.warning("Error recovering offline data.");
 		}
+	}
+
+	private void initializeLogger() {
+		try {
+			// First, create the logs directory.
+			// TODO directory
+			File logDir = new File("", "/logs/");
+			boolean dirOk = logDir.mkdirs();
+			if (!dirOk && !logDir.exists()) {
+			throw new RuntimeException("mkdirs() failed");
+			}
+
+			// Now set up logging to a file in that directory.
+			this.logger = Logger.getLogger("org.hackystat.sensorshell-"
+			+ this.toolName);
+			this.logger.setUseParentHandlers(false);
+			String fileName = logDir.getAbsolutePath() + "/" + this.toolName
+			+ ".%u.log";
+			FileHandler handler = new FileHandler(fileName, 500000, 1, true);
+			handler.setFormatter(this.oneLineFormatter );
+			this.logger.addHandler(handler);
+			// Add a couple of newlines to the log file to distinguish new shell
+			// sessions.
+			logger.info(cr + cr);
+			// Now set the logging level based upon the SensorShell Property.
+			logger.setLevel(this.sensorProperties.getLoggingLevel());
+			logger.getHandlers()[0].setLevel(this.sensorProperties
+			.getLoggingLevel());
+			} catch (Exception e) {
+			System.out.println("Error initializing SensorShell logger:\n" + e);
+			}
 	}
 
 	/**
@@ -198,7 +218,7 @@ public class SingleSensorShell implements Shell {
 			return;
 		}
 
-		boolean isPingable = this.pingCommand.isPingable();
+		boolean isPingable = SensorBaseClient.getInstance().isPingable();
 		if (isPingable) {
 			this.println("Checking for offline data to recover.");
 			this.offlineManager.recover();
@@ -206,43 +226,7 @@ public class SingleSensorShell implements Shell {
 			this.println("Not checking for offline data: Server not available.");
 		}
 	}
-
-	/**
-	 * Initializes SensorShell logging. All client input is recorded to a log
-	 * file in [user.home]/.hackystat/sensorshell/logs. Note that [user.home] is
-	 * obtained from HackystatUserHome.getHome().
-	 */
-	private void initializeLogger() {
-		try {
-			// First, create the logs directory.
-			// TODO directory
-			File logDir = new File("", "/logs/");
-			boolean dirOk = logDir.mkdirs();
-			if (!dirOk && !logDir.exists()) {
-				throw new RuntimeException("mkdirs() failed");
-			}
-
-			// Now set up logging to a file in that directory.
-			this.logger = Logger.getLogger("org.hackystat.sensorshell-"
-					+ this.toolName);
-			this.logger.setUseParentHandlers(false);
-			String fileName = logDir.getAbsolutePath() + "/" + this.toolName
-					+ ".%u.log";
-			FileHandler handler = new FileHandler(fileName, 500000, 1, true);
-			handler.setFormatter(this.oneLineFormatter);
-			this.logger.addHandler(handler);
-			// Add a couple of newlines to the log file to distinguish new shell
-			// sessions.
-			logger.info(cr + cr);
-			// Now set the logging level based upon the SensorShell Property.
-			logger.setLevel(this.sensorProperties.getLoggingLevel());
-			logger.getHandlers()[0].setLevel(this.sensorProperties
-					.getLoggingLevel());
-		} catch (Exception e) {
-			System.out.println("Error initializing SensorShell logger:\n" + e);
-		}
-	}
-
+	
 	/**
 	 * Process a single input string representing a command.
 	 * 
@@ -258,7 +242,7 @@ public class SingleSensorShell implements Shell {
 		}
 		// Log the command if we're not running interactively.
 		if (!this.isInteractive) {
-			logger.info("#> " + inputString);
+			//logger.info("#> " + inputString);
 		}
 		// Process quit command.
 		if ("quit".equals(inputString)) {
@@ -280,10 +264,8 @@ public class SingleSensorShell implements Shell {
 
 		// Process ping command.
 		if ("ping".equals(inputString)) {
-			boolean isPingable = this.pingCommand.isPingable();
+			boolean isPingable = SensorBaseClient.getInstance().isPingable();
 			this.println("Ping of host "
-					+ this.sensorProperties.getSensorBaseHost() + " for user "
-					+ this.sensorProperties.getSensorBaseUser()
 					+ (isPingable ? " succeeded." : " did not succeed"));
 			return;
 		}
@@ -425,7 +407,7 @@ public class SingleSensorShell implements Shell {
 	String readLine() {
 		try {
 			String line = this.bufferedReader.readLine();
-			logger.info(line);
+			//logger.info(line);
 			return (line == null) ? "" : line;
 		} catch (IOException e) {
 			// logger.info(cr);
@@ -441,7 +423,7 @@ public class SingleSensorShell implements Shell {
 	 *            The line to be printed.
 	 */
 	public final synchronized void println(String line) {
-		logger.info(line + cr);
+		//logger.info(line + cr);
 		if (isInteractive) {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(
 					"MM/dd HH:mm:ss", Locale.US);
@@ -456,7 +438,7 @@ public class SingleSensorShell implements Shell {
 	 *            The line to be printed.
 	 */
 	public final synchronized void print(String line) {
-		logger.info(line);
+		//logger.info(line);
 		if (isInteractive) {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(
 					"MM/dd HH:mm:ss", Locale.US);
@@ -490,23 +472,6 @@ public class SingleSensorShell implements Shell {
 	 */
 	public synchronized long getTotalSent() {
 		return this.sensorDataCommand.getTotalSent();
-	}
-
-	/**
-	 * Return the current version number.
-	 *
-	 * @return The version number, or "Unknown" if could not be determined.
-	 */
-	private String getVersion() {
-		String release;
-		try {
-			Package thisPackage = Class.forName(
-					"org.hackystat.sensorshell.SensorShell").getPackage();
-			release = thisPackage.getImplementationVersion();
-		} catch (Exception e) {
-			release = "Unknown";
-		}
-		return release;
 	}
 
 	/**
@@ -552,7 +517,7 @@ public class SingleSensorShell implements Shell {
 
 	/** {@inheritDoc} */
 	public synchronized boolean ping() {
-		return this.pingCommand.isPingable();
+		return SensorBaseClient.getInstance().isPingable();
 	}
 
 	/** {@inheritDoc} */
@@ -565,9 +530,4 @@ public class SingleSensorShell implements Shell {
 	public synchronized SensorShellProperties getProperties() {
 		return this.sensorProperties;
 	}
-
-	  public synchronized void commitSnapshot(String projectUri, Git git, boolean needsPull)
-	  {
-		  this.sensorDataCommand.commitSnapshot(projectUri, git, needsPull);
-	  }
 }

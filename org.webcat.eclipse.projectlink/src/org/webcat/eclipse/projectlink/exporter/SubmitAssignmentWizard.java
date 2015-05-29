@@ -33,6 +33,7 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.ui.IExportWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.dialogs.AuthenticationDialog;
 import org.webcat.eclipse.projectlink.dialogs.ExceptionDialog;
@@ -136,7 +137,10 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 		try
 		{
 			submitter.submit(manifest);
-
+			
+			// Send an event to the server summarizing this submission.
+			SensorBaseClient.getInstance().submissionHappened(submitPage.getProject().getDescription().getLocationURI().getPath());
+			
 			if (submitter.hasResponse())
 			{
 				openResponseInBrowser(submitter.getResponse());

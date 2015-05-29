@@ -32,6 +32,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
@@ -78,7 +79,6 @@ public class Activator extends AbstractUIPlugin
 	{
 		super.start(context);
 		plugin = this;
-		devEventTrackerSensor = EclipseSensor.getInstance();
 	}
 
 
@@ -90,10 +90,9 @@ public class Activator extends AbstractUIPlugin
 	public void stop(BundleContext context) throws Exception
 	{
 		plugin = null;
+	    devEventTrackerSensor.stop();
+	    devEventTrackerSensor = null;
 		super.stop(context);
-		
-	    EclipseSensor sensor = EclipseSensor.getInstance();
-	    sensor.stop();
 	}
 
 
@@ -210,13 +209,6 @@ public class Activator extends AbstractUIPlugin
 	{
 		getPreferenceStore().setValue(
 				IPreferencesConstants.STORED_USERNAME, username);
-		
-		//TODO This probably shouldn't be here, but need to fix username whenever we get it (i.e. it's entered and set here)
-		try {
-			devEventTrackerSensor = EclipseSensor.getInstance();
-		} catch (SensorShellException e) {
-			e.printStackTrace();
-		}
 	}
 
 
@@ -321,9 +313,10 @@ public class Activator extends AbstractUIPlugin
 	   */
 	  public void log(String message, Exception e) {
 	    String pluginName = super.getBundle().getSymbolicName();
-	    IStatus status = new Status(IStatus.ERROR, pluginName, 0, message + " " + e.getMessage(), e);
-	    
+	    String longMessage = message + " " + e.getMessage();
+	    IStatus status = new Status(IStatus.ERROR, pluginName, 0, longMessage, e);
 	    plugin.getLog().log(status);
+	    SensorBaseClient.getInstance().pluginExceptionHappened(e);
 	  }
 	  
 	  /**
@@ -332,8 +325,6 @@ public class Activator extends AbstractUIPlugin
 	   * @param e Exception. 
 	   */
 	  public void log(Exception e) {
-	    String pluginName = super.getBundle().getSymbolicName();
-	    IStatus status = new Status(IStatus.ERROR, pluginName, 0, e.getMessage(), e);
-	    plugin.getLog().log(status);
+	    log(null, e);
 	  }
 }

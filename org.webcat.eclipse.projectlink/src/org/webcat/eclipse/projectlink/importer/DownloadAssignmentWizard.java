@@ -31,6 +31,7 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IImportWizard;
 import org.eclipse.ui.IWorkbench;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.projectlink.dialogs.ExceptionDialog;
 import org.webcat.eclipse.projectlink.i18n.Messages;
 import org.webcat.eclipse.projectlink.importer.model.ImportNode;
