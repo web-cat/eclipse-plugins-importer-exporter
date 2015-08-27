@@ -651,13 +651,7 @@ public class EclipseSensor {
 				IFileEditorInput input = (IFileEditorInput) editorInput;
 				IFile file = input.getFile();
 				if (file != null) {
-					try {
-						return file.getProject().getDescription()
-								.getLocationURI();
-					} catch (CoreException e) {
-						Activator.getDefault().log(e);
-						return URI.create("file:///Unknown");
-					}
+				    return file.getProject().getLocationURI();
 				}
 			}
 		}
@@ -1127,7 +1121,7 @@ public class EclipseSensor {
 				String projectName = project.getName();
 				URI projectResource = project.getFile(".project")
 						.getLocationURI();
-				URI projectUri = project.getDescription().getLocationURI();
+				URI projectUri = project.getLocationURI();
 
 				Map<String, String> keyValueMap = new HashMap<String, String>();
 				keyValueMap.put(EclipseSensorConstants.UNIT_TYPE, "project");

@@ -139,7 +139,8 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 			submitter.submit(manifest);
 			
 			// Send an event to the server summarizing this submission.
-			SensorBaseClient.getInstance().submissionHappened(submitPage.getProject().getDescription().getLocationURI().getPath());
+			SensorBaseClient.getInstance().submissionHappened(
+                submitPage.getProject());
 			
 			if (submitter.hasResponse())
 			{

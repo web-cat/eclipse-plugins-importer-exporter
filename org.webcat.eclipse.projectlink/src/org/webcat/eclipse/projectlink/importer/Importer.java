@@ -147,7 +147,7 @@ public class Importer
         try
         {
 			monitor.beginTask(
-					"Getting the list of assignments available for download...", 1);
+			    "Getting the list of assignments available for download...", 1);
         	
             DocumentBuilderFactory factory =
                 DocumentBuilderFactory.newInstance();
@@ -415,7 +415,8 @@ public class Importer
 	        InputStream stream = url.openStream();
 	
 	        File tempFile = File.createTempFile("downloadedproject", ".zip");
-	        ZipUtils.copyStreamToFile(stream, tempFile, System.currentTimeMillis());
+	        ZipUtils.copyStreamToFile(
+	            stream, tempFile, System.currentTimeMillis());
 	        stream.close();
 	
 	        String rootDir = ZipUtils.directoryAtArchiveRoot(tempFile);
@@ -463,8 +464,11 @@ public class Importer
 		        		description.getName());
 		        
 	        }
-	        // Send an event to the server indicating that a starter project has been downloaded.
-			SensorBaseClient.getInstance().downloadStarterProjectHappened(workspaceProject.getDescription().getLocationURI().getPath(), description.getName());
+	        // Send an event to the server indicating that a starter project
+	        // has been downloaded.
+			SensorBaseClient.getInstance().downloadStarterProjectHappened(
+			    workspaceProject.getLocationURI().getPath(),
+			    description.getName());
 			
 	        tempFile.delete();
     	}

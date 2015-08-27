@@ -301,30 +301,63 @@ public class Activator extends AbstractUIPlugin
 	   *
 	   * @see AbstractUIPlugin
 	   */
-	  public static IWorkspace getWorkspace() {
+	  public static IWorkspace getWorkspace()
+	  {
 	    return ResourcesPlugin.getWorkspace();
 	  }
 	  
 	  /**
 	   * Logs out the exception or error message for Eclipse sensor plug-in.
 	   * 
-	   * @param message Error message.
-	   * @param e Exception. 
+	   * @param severity The severity of the message to log.
+	   * @param message  Error message.
+	   * @param e        Exception. 
 	   */
-	  public void log(String message, Exception e) {
+	  public void log(int severity, String message, Exception e)
+	  {
 	    String pluginName = super.getBundle().getSymbolicName();
-	    String longMessage = message + " " + e.getMessage();
-	    IStatus status = new Status(IStatus.ERROR, pluginName, 0, longMessage, e);
+	    String longMessage = message;
+	    if (e != null)
+	    {
+	        longMessage += " " + e.getMessage();
+	    }
+	    IStatus status =
+	        new Status(severity, pluginName, 0, longMessage, e);
 	    plugin.getLog().log(status);
-	    SensorBaseClient.getInstance().pluginExceptionHappened(e);
+	    if (e != null)
+	    {
+	        SensorBaseClient.getInstance().pluginExceptionHappened(e);
+	    }
+      }
+      
+      /**
+       * Logs out the exception or error message for Eclipse sensor plug-in.
+       * 
+       * @param message Error message.
+       * @param e Exception. 
+       */
+      public void log(String message, Exception e)
+      {
+          log(IStatus.ERROR, message, e);
 	  }
-	  
-	  /**
+
+      /**
+       * Logs out the message for Eclipse sensor plug-in.
+       * 
+       * @param message The message to log. 
+       */
+      public void log(String message)
+      {
+        log(IStatus.INFO, message, null);
+      }
+
+      /**
 	   * Logs out the exception or error message for Eclipse sensor plug-in.
 	   * 
 	   * @param e Exception. 
 	   */
-	  public void log(Exception e) {
+	  public void log(Exception e)
+	  {
 	    log(null, e);
 	  }
 }
