@@ -2,10 +2,7 @@ package org.webcat.eclipse.deveventtracker;
 
 import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.*;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.Date;
@@ -55,6 +52,7 @@ import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
+import org.webcat.eclipse.projectlink.util.GitIgnoreUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
@@ -1269,31 +1267,7 @@ public class EclipseSensor {
 				Git git = Git.init().setDirectory(localRepoDir).call();
 
 				// Create default .gitignore file if it doesn't already exist
-				File gitignore = new File(projectUri, "/.gitignore");
-				if (!gitignore.exists()) {
-					try {
-						gitignore.createNewFile();
-						FileWriter fw = new FileWriter(gitignore, true);
-						BufferedWriter out = new BufferedWriter(fw);
-						out.write("~*");
-						out.newLine();
-						out.write("._*");
-						out.newLine();
-						out.write(".TemporaryItems");
-						out.newLine();
-						out.write(".DS_Store");
-						out.newLine();
-						out.write("Thumbs.db");
-						out.newLine();
-						out.write("/bin/");
-						out.newLine();
-						out.flush();
-						out.close();
-						fw.close();
-					} catch (IOException e) {
-						Activator.getDefault().log(e);
-					}
-				}
+				GitIgnoreUtils.writeToGitIgnore(projectUri);
 
 				// Add all files in the project directory
 				git.add().addFilepattern(".").call();
