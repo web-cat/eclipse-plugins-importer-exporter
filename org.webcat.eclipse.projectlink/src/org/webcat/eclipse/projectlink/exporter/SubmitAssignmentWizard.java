@@ -30,6 +30,7 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.jgit.submodule.SubmoduleWalk.IgnoreSubmoduleMode;
 import org.eclipse.ui.IExportWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
@@ -226,9 +227,23 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 	private ISubmittableItem[] getFilesToSubmit()
 	{
 		IProject project = submitPage.getProject();
-
-		return new ISubmittableItem[] {
-				new SubmittableFile(project.getLocation().toFile())
-		};
+		File[] children = project.getLocation().toFile().listFiles();
+		ISubmittableItem[] submittables = new SubmittableFile[children.length - 1];
+		int childrenIterator = 0;
+		int submittablesIterator = 0;
+		while (submittablesIterator < submittables.length) {
+			if (children[childrenIterator].isFile() || !children[childrenIterator].getName().contains(".git")) {
+				submittables[submittablesIterator] = new SubmittableFile(children[childrenIterator]);
+				submittablesIterator++;
+			}
+			
+			childrenIterator++;
+		}
+		
+//		return new ISubmittableItem[] {
+//				new SubmittableFile(project.getLocation().toFile())
+//		};
+		
+		return submittables;
 	}
 }

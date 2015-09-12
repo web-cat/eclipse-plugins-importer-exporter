@@ -63,7 +63,7 @@ public class GitIgnoreUtils {
 				out.write("Thumbs.db"); out.newLine();
 				out.write("/bin/"); out.newLine();
 				out.write("*.class"); out.newLine();
-				out.write("*.classpath"); out.newLine();
+//				out.write("*.classpath"); out.newLine();
 				out.write("*.jar"); out.newLine();
 				out.write("*.war"); out.newLine();
 				out.write("*.ear"); out.newLine();
@@ -83,7 +83,7 @@ public class GitIgnoreUtils {
 				out.write("*.dll"); out.newLine();
 				out.write("*.lib"); out.newLine();
 				out.write("*.exe"); out.newLine();
-				out.write("*.out"); out.newLine();
+//				out.write("*.out"); out.newLine();
 				out.write("*.app"); out.newLine();
 				out.flush();
 				out.close();
