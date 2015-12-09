@@ -207,12 +207,12 @@ public class SensorBaseClient
 		// UUID.
 		UUID projectUuid = null;
 		String storedProjectUri = null;
-		try
-		{
-			FileReader fr = new FileReader(projectUri + "/.uuid");
-			BufferedReader br = new BufferedReader(fr);
+		File uuidFile = new File(projectUri + "/.uuid");
+		if (uuidFile.exists()) {
 			try
 			{
+				FileReader fr = new FileReader(uuidFile);
+				BufferedReader br = new BufferedReader(fr);
 				projectUuid = UUID.fromString(br.readLine());
 				storedProjectUri = br.readLine();
 				br.close();
@@ -227,10 +227,6 @@ public class SensorBaseClient
 			{
 				Activator.getDefault().log(e);
 			}
-		}
-		catch (FileNotFoundException e1)
-		{
-			Activator.getDefault().log(e1);
 		}
 
 		// We don't have the UUID in the file system, or the file's projectUri
