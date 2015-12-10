@@ -19,6 +19,7 @@ public class SensorData
     protected long runtime;
     protected String tool;
     protected String sensorDataType;
+    protected String userAction;
     protected String uri;
     private String projectUri;
     protected Properties properties;
@@ -121,6 +122,14 @@ public class SensorData
     public boolean isSetSensorDataType() {
         return (this.sensorDataType!= null);
     }
+    
+    public String getUserAction() {
+    	return this.userAction;
+    }
+    
+    public void setUserAction(String value) {
+    	this.userAction = value;
+    }
 
     /**
      * Gets the value of the properties property.
@@ -203,6 +212,9 @@ public class SensorData
 		representation += "<SensorDataType>" + "\n";
 		representation += sensorDataType + "\n";
 		representation += "</SensorDataType>" + "\n";
+		representation += "<UserAction>" + "\n";
+		representation += userAction + "\n";
+		representation += "</UserAction>" + "\n";
 		representation += "<URI>" + "\n";
 		representation += uri + "\n";
 		representation += "</URI>" + "\n";

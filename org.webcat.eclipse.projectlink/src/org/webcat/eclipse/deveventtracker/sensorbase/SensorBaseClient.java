@@ -372,7 +372,7 @@ public class SensorBaseClient
 						+ "&time=" + data.timestamp + "&runtime="
 						+ data.runtime + "&tool=" + data.tool
 						+ "&sensorDataType=" + data.sensorDataType + "&uri="
-						+ data.uri;
+						+ data.uri + "&userAction=" + data.userAction;
 				if (data.findProperty("CommitHash") != null)
 				{
 					requestString += "&commitHash="

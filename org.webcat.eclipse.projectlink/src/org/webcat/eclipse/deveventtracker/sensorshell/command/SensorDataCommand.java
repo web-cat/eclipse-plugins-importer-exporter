@@ -159,6 +159,7 @@ public class SensorDataCommand extends Command {
 			data.setTimestamp(Long
 					.parseLong(getMap(keyValMap, "Timestamp", "")));
 			data.setRuntime(Long.parseLong(getMap(keyValMap, "Runtime", "")));
+			data.setUserAction(getMap(keyValMap, "Type", ""));
 			data.setSensorDataType(getMap(keyValMap, "SensorDataType", ""));
 			data.setTool(getMap(keyValMap, "Tool", ""));
 
@@ -280,7 +281,7 @@ public class SensorDataCommand extends Command {
 		return (!"Timestamp".equals(key)) && (!"Runtime".equals(key))
 				&& (!"Tool".equals(key)) && (!"URI".equals(key))
 				&& (!"ProjectURI".equals(key))
-				&& (!"SensorDataType".equals(key));
+				&& (!"SensorDataType".equals(key) && (!"Type".equals(key)));
 	}
 
 	/**
