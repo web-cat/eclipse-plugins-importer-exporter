@@ -3,19 +3,16 @@ package org.webcat.eclipse.deveventtracker.sensorbase;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URL;
 import java.util.UUID;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -372,11 +369,21 @@ public class SensorBaseClient
 						+ "&time=" + data.timestamp + "&runtime="
 						+ data.runtime + "&tool=" + data.tool
 						+ "&sensorDataType=" + data.sensorDataType + "&uri="
-						+ data.uri + "&userAction=" + data.userAction;
+						+ data.uri;
 				if (data.findProperty("CommitHash") != null)
 				{
 					requestString += "&commitHash="
 							+ data.findProperty("CommitHash").value;
+				}
+				
+				if (data.findProperty("Type") != null) {
+					requestString += "&type="
+							+ data.findProperty("Type").value;
+				}
+				
+				if (data.findProperty("Subtype") != null) {
+					requestString += "&subtype="
+							+ data.findProperty("Subtype").value;
 				}
 				Response response =
 	                makeRequest(Method.GET, requestString, null);
