@@ -639,10 +639,14 @@ public class SensorBaseClient
 				+ "&projectName=" + projectName + "&userUuid="
 				+ retrieveUser(getEmail()).toString();
 			Response response = makeRequest(Method.GET, requestString, null);
-			if (!response.getStatus().isSuccess())
+			if (response.getStatus().isSuccess())
 			{
+				 Activator.getDefault().getPreferenceStore()
+	                .setValue(IPreferencesConstants.PUSH_TO_SERVER, true);
+			} else {
 				throw new SensorBaseClientException(response.getStatus());
 			}
+			
 			String responseText;
 
 			try
@@ -665,6 +669,7 @@ public class SensorBaseClient
 			{
 				Activator.getDefault().log(e);
 			}
+			
 		}
 	}
 
