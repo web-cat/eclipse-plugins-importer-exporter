@@ -633,43 +633,38 @@ public class SensorBaseClient
 	    String projectUri, String projectName)
 	    throws SensorBaseClientException
 	{
-		if (getPushToServer())
+		String requestString = "projectDownload?projectUri=" + projectUri
+			+ "&projectName=" + projectName + "&userUuid="
+			+ retrieveUser(getEmail()).toString();
+		Response response = makeRequest(Method.GET, requestString, null);
+		if (response.getStatus().isSuccess())
 		{
-			String requestString = "projectDownload?projectUri=" + projectUri
-				+ "&projectName=" + projectName + "&userUuid="
-				+ retrieveUser(getEmail()).toString();
-			Response response = makeRequest(Method.GET, requestString, null);
-			if (response.getStatus().isSuccess())
-			{
-				 Activator.getDefault().getPreferenceStore()
-	                .setValue(IPreferencesConstants.PUSH_TO_SERVER, true);
-			} else {
-				throw new SensorBaseClientException(response.getStatus());
-			}
-			
-			String responseText;
+			Activator.getDefault().getPreferenceStore().setValue(IPreferencesConstants.PUSH_TO_SERVER, true);
+		} else {
+			throw new SensorBaseClientException(response.getStatus());
+		}
+		
+		String responseText;
 
-			try
-			{
-				responseText = response.getEntity().getText();
-				String uuidString = parseUUID(responseText);
-				// Create new file containing UUID and projectUri
-				File studentProjectUUIDFileToCreate = new File(projectUri
-						+ "/.uuid");
-				FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
-				BufferedWriter out = new BufferedWriter(fw);
-				out.write(uuidString);
-				out.newLine();
-				out.write(projectUri);
-				out.flush();
-				fw.close();
-				out.close();
-			}
-			catch (IOException e)
-			{
-				Activator.getDefault().log(e);
-			}
-			
+		try
+		{
+			responseText = response.getEntity().getText();
+			String uuidString = parseUUID(responseText);
+			// Create new file containing UUID and projectUri
+			File studentProjectUUIDFileToCreate = new File(projectUri
+					+ "/.uuid");
+			FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
+			BufferedWriter out = new BufferedWriter(fw);
+			out.write(uuidString);
+			out.newLine();
+			out.write(projectUri);
+			out.flush();
+			fw.close();
+			out.close();
+		}
+		catch (IOException e)
+		{
+			Activator.getDefault().log(e);
 		}
 	}
 
