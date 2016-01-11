@@ -8,8 +8,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.UUID;
 
 import org.eclipse.core.resources.IProject;
@@ -370,21 +372,33 @@ public class SensorBaseClient
 						+ data.runtime + "&tool=" + data.tool
 						+ "&sensorDataType=" + data.sensorDataType + "&uri="
 						+ data.uri;
-				if (data.findProperty("CommitHash") != null)
-				{
-					requestString += "&commitHash="
-							+ data.findProperty("CommitHash").value;
+//				if (data.findProperty("CommitHash") != null)
+//				{
+//					requestString += "&commitHash="
+//							+ data.findProperty("CommitHash").value;
+//				}
+//				
+//				if (data.findProperty("Type") != null) {
+//					requestString += "&type="
+//							+ data.findProperty("Type").value;
+//				}
+//				
+//				if (data.findProperty("Subtype") != null) {
+//					requestString += "&subtype="
+//							+ data.findProperty("Subtype").value;
+//				}
+				
+				int counter = 1;
+				for (Property p : data.getProperties().property) {
+					try {
+						requestString += "&name" + counter + "=" + URLEncoder.encode(p.getKey(), "UTF-8");
+						requestString += "&value" + counter + "=" + URLEncoder.encode(p.getValue(), "UTF-8");
+						counter++;
+					} catch (UnsupportedEncodingException e) {
+						Activator.getDefault().log(e);
+					}
 				}
 				
-				if (data.findProperty("Type") != null) {
-					requestString += "&type="
-							+ data.findProperty("Type").value;
-				}
-				
-				if (data.findProperty("Subtype") != null) {
-					requestString += "&subtype="
-							+ data.findProperty("Subtype").value;
-				}
 				Response response =
 	                makeRequest(Method.GET, requestString, null);
 				if (!response.getStatus().isSuccess())
