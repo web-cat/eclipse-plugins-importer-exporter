@@ -23,6 +23,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageDeclaration;
 import org.eclipse.jdt.core.JavaCore;
@@ -151,7 +152,7 @@ public class EclipseSensor {
 	 * not.
 	 */
 	private WindowListenerAdapter windowListener;
-
+	
 	/** Build error sensor. */
 	private BuildErrorSensor buildErrorSensor;
 
@@ -1189,6 +1190,12 @@ public class EclipseSensor {
 
 					URI fileResource = file.getLocationURI();
 					URI projectURI = file.getProject().getLocationURI();
+					
+					if (file.getName().contains("test") || file.getName().contains("Test")) {
+						keyValueMap.put("TestCodeEdit", "true");
+					} else {
+						keyValueMap.put("TestCodeEdit", "false");
+					}
 
 					StringBuffer message = new StringBuffer("Save File");
 					message.append(" : ").append(
