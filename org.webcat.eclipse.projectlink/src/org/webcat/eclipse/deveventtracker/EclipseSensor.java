@@ -23,6 +23,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageDeclaration;
@@ -153,6 +155,9 @@ public class EclipseSensor {
 	 */
 	private WindowListenerAdapter windowListener;
 	
+	private ILaunchManager launchManager;
+	private ILaunchListener launchListener;
+	
 	/** Build error sensor. */
 	private BuildErrorSensor buildErrorSensor;
 
@@ -277,12 +282,13 @@ public class EclipseSensor {
 						.getFileResource(this.activeTextEditor);
 				URI projectURI = EclipseSensor.this
 						.getProjectURI(this.activeTextEditor);
-				Map<String, String> keyValueMap = new HashMap<String, String>();
+				final Map<String, String> keyValueMap = new HashMap<String, String>();
 				keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
 				keyValueMap.put(EclipseSensorConstants.UNIT_TYPE,
 						EclipseSensorConstants.FILE);
 				keyValueMap.put(EclipseSensorConstants.UNIT_NAME,
 						EclipseSensor.this.extractFileName(fileResource));
+
 				this.addDevEvent(EclipseSensorConstants.DEVEVENT_EDIT,
 						projectURI, fileResource, keyValueMap, "Opened "
 								+ fileResource.toString());
@@ -291,7 +297,27 @@ public class EclipseSensor {
 						.getDocumentProvider();
 				IDocument document = provider.getDocument(activeEditorPart
 						.getEditorInput());
-
+				
+				if (this.launchManager == null) {
+					this.launchManager = DebugPlugin.getDefault().getLaunchManager();
+				}
+				
+				this.launchListener = new ILaunchListener() {
+					
+					public void launchRemoved(ILaunch arg0) {
+						EclipseSensor.this.addDevEvent("TerminationEvent", EclipseSensor.this.getProjectURI(EclipseSensor.this.getActiveTextEditor()), EclipseSensor.this.getFileResource(EclipseSensor.this.getActiveTextEditor()), null, "Termination");
+					}
+					
+					public void launchChanged(ILaunch arg0) {
+					}
+					
+					public void launchAdded(ILaunch arg0) {
+						EclipseSensor.this.addDevEvent("LaunchEvent", EclipseSensor.this.getProjectURI(EclipseSensor.this.getActiveTextEditor()), EclipseSensor.this.getFileResource(EclipseSensor.this.getActiveTextEditor()), null, "LaunchEvent");
+					}
+				};
+				
+				this.launchManager.addLaunchListener(this.launchListener);
+				
 				// Initially sets active buffer and threshold buffer.
 				// Otherwise a first activated buffer would not be recorded.
 				this.activeBufferSize = document.getLength();

@@ -330,10 +330,15 @@ public class SensorBaseClient
 					+ data.timestamp + "&runtime=" + data.runtime + "&tool="
 					+ data.tool + "&sensorDataType=" + data.sensorDataType
 					+ "&uri=" + data.uri;
-			if (data.findProperty("CommitHash") != null)
-			{
-				requestString +=
-	                "&CommitHash=" + data.findProperty("CommitHash").value;
+			int counter = 1;
+			for (Property p : data.getProperties().property) {
+				try {
+					requestString += "&name" + counter + "=" + URLEncoder.encode(p.getKey(), "UTF-8");
+					requestString += "&value" + counter + "=" + URLEncoder.encode(p.getValue(), "UTF-8");
+					counter++;
+				} catch (UnsupportedEncodingException e) {
+					Activator.getDefault().log(e);
+				}
 			}
 			Response response = makeRequest(Method.GET, requestString, null);
 			if (!response.getStatus().isSuccess())
@@ -372,21 +377,6 @@ public class SensorBaseClient
 						+ data.runtime + "&tool=" + data.tool
 						+ "&sensorDataType=" + data.sensorDataType + "&uri="
 						+ data.uri;
-//				if (data.findProperty("CommitHash") != null)
-//				{
-//					requestString += "&commitHash="
-//							+ data.findProperty("CommitHash").value;
-//				}
-//				
-//				if (data.findProperty("Type") != null) {
-//					requestString += "&type="
-//							+ data.findProperty("Type").value;
-//				}
-//				
-//				if (data.findProperty("Subtype") != null) {
-//					requestString += "&subtype="
-//							+ data.findProperty("Subtype").value;
-//				}
 				
 				int counter = 1;
 				for (Property p : data.getProperties().property) {
