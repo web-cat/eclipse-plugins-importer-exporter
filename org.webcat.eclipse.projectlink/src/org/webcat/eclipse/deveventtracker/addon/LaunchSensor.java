@@ -7,9 +7,9 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchListener;
-import org.eclipse.debug.core.ILaunchManager;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
 
 /**
@@ -23,7 +23,6 @@ public class LaunchSensor implements ILaunchListener {
 	private EclipseSensor eclipseSensor;
 	private URI projectURI;
 	private URI fileURI;
-	private ILaunchManager launchManager;
 	
 	/**
 	 * Creates a new LaunchSensor that will be added as a listener
@@ -36,10 +35,9 @@ public class LaunchSensor implements ILaunchListener {
 	 * @param launchManager
 	 * 		The LaunchManager to which this sensor will be added as an instance
 	 */
-	public LaunchSensor(EclipseSensor sensor, URI projectURI, ILaunchManager launchManager) {
+	public LaunchSensor(EclipseSensor sensor, URI projectURI) {
 		this.eclipseSensor = sensor;
 		this.projectURI = projectURI;
-		this.launchManager = launchManager;
 		this.fileURI = this.eclipseSensor.getActiveFile();
 	}
 
@@ -50,12 +48,12 @@ public class LaunchSensor implements ILaunchListener {
 	 * is added. If not, then "NormalLaunch".
 	 */
 	public void launchAdded(ILaunch arg0) {
-		String name = this.launchManager.getLaunches()[0].getLaunchConfiguration().getName();
+		String name = arg0.getLaunchConfiguration().getName();
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		if (name.toLowerCase().contains("test")) {
-			keyValueMap.put("LaunchType", "TestLaunch");
+			keyValueMap.put("LaunchType", "Test");
 		} else {
-			keyValueMap.put("LaunchType", "NormalLaunch");
+			keyValueMap.put("LaunchType", "Normal");
 		}
 		
 		this.eclipseSensor.addDevEvent("Launch", this.projectURI, this.fileURI, keyValueMap, "Launch happened");
@@ -70,6 +68,26 @@ public class LaunchSensor implements ILaunchListener {
 	 * This method will add a DevEvent about the termination.
 	 */
 	public void launchRemoved(ILaunch arg0) {
-		this.eclipseSensor.addDevEvent("Termination", this.projectURI, this.fileURI, null, "Program Terminated");
+		String name = arg0.getLaunchConfiguration().getName();
+		Map<String, String> keyValueMap = new HashMap<String, String>();
+		if (name.toLowerCase().contains("test") || name.toLowerCase().contains("junit")) {
+			keyValueMap.put("TerminationType", "Test");
+		} else {
+			keyValueMap.put("TerminationType", "Normal");
+		}
+		
+		try {
+			int exitValue = arg0.getProcesses()[0].getExitValue();
+			if (exitValue == 0) {
+				keyValueMap.put("NormalTermination", "true");
+			} else {
+				keyValueMap.put("NormalTermination", "false");
+			}
+			
+		} catch (DebugException e) {
+			// do nothing
+		}
+		
+		this.eclipseSensor.addDevEvent("Termination", this.projectURI, this.fileURI, keyValueMap, "Program Terminated");
 	}
 }

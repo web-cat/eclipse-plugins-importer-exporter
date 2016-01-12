@@ -301,7 +301,7 @@ public class EclipseSensor {
 					this.launchManager = DebugPlugin.getDefault().getLaunchManager();
 				}
 				
-				this.launchListener = new LaunchSensor(this, projectURI, this.launchManager);
+				this.launchListener = new LaunchSensor(this, projectURI);
 				
 				this.launchManager.addLaunchListener(this.launchListener);
 				
