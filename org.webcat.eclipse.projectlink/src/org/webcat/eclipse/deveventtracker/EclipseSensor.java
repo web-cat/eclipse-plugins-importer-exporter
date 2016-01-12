@@ -23,8 +23,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
-import org.eclipse.debug.core.ILaunch;
-import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageDeclaration;
@@ -51,6 +49,7 @@ import org.webcat.eclipse.deveventtracker.addon.BuildErrorSensor;
 import org.webcat.eclipse.deveventtracker.addon.DebugSensor;
 import org.webcat.eclipse.deveventtracker.addon.JavaStatementMeter;
 import org.webcat.eclipse.deveventtracker.addon.JavaStructureChangeDetector;
+import org.webcat.eclipse.deveventtracker.addon.LaunchSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
@@ -156,7 +155,7 @@ public class EclipseSensor {
 	private WindowListenerAdapter windowListener;
 	
 	private ILaunchManager launchManager;
-	private ILaunchListener launchListener;
+	private LaunchSensor launchListener;
 	
 	/** Build error sensor. */
 	private BuildErrorSensor buildErrorSensor;
@@ -302,19 +301,7 @@ public class EclipseSensor {
 					this.launchManager = DebugPlugin.getDefault().getLaunchManager();
 				}
 				
-				this.launchListener = new ILaunchListener() {
-					
-					public void launchRemoved(ILaunch arg0) {
-						EclipseSensor.this.addDevEvent("TerminationEvent", EclipseSensor.this.getProjectURI(EclipseSensor.this.getActiveTextEditor()), EclipseSensor.this.getFileResource(EclipseSensor.this.getActiveTextEditor()), null, "Termination");
-					}
-					
-					public void launchChanged(ILaunch arg0) {
-					}
-					
-					public void launchAdded(ILaunch arg0) {
-						EclipseSensor.this.addDevEvent("LaunchEvent", EclipseSensor.this.getProjectURI(EclipseSensor.this.getActiveTextEditor()), EclipseSensor.this.getFileResource(EclipseSensor.this.getActiveTextEditor()), null, "LaunchEvent");
-					}
-				};
+				this.launchListener = new LaunchSensor(this, projectURI, this.launchManager);
 				
 				this.launchManager.addLaunchListener(this.launchListener);
 				
