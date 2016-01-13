@@ -10,6 +10,10 @@ import java.util.Map;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchListener;
+import org.eclipse.jdt.junit.JUnitCore;
+import org.eclipse.jdt.junit.TestRunListener;
+import org.eclipse.jdt.junit.model.ITestCaseElement;
+import org.eclipse.jdt.junit.model.ITestElement.Result;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
 
 /**
@@ -23,6 +27,10 @@ public class LaunchSensor implements ILaunchListener {
 	private EclipseSensor eclipseSensor;
 	private URI projectURI;
 	private URI fileURI;
+	private TestRunListener listener;
+	private int successes;
+	private int failures;
+	private int errors;
 	
 	/**
 	 * Creates a new LaunchSensor that will be added as a listener
@@ -39,6 +47,21 @@ public class LaunchSensor implements ILaunchListener {
 		this.eclipseSensor = sensor;
 		this.projectURI = projectURI;
 		this.fileURI = this.eclipseSensor.getActiveFile();
+		this.listener = new TestRunListener() {
+			
+			public void testCaseFinished(ITestCaseElement element) {
+				Result result = element.getTestResult(true);
+				if (result.equals(Result.OK)) {
+					successes++;
+				} else if (result.equals(Result.FAILURE)) {
+					failures++;
+				} else if (result.equals(Result.ERROR)) {
+					errors++;
+				}
+			}
+		};
+		
+		JUnitCore.addTestRunListener(this.listener);
 	}
 
 	/**
@@ -70,8 +93,15 @@ public class LaunchSensor implements ILaunchListener {
 	public void launchRemoved(ILaunch arg0) {
 		String name = arg0.getLaunchConfiguration().getName();
 		Map<String, String> keyValueMap = new HashMap<String, String>();
+		
 		if (name.toLowerCase().contains("test") || name.toLowerCase().contains("junit")) {
 			keyValueMap.put("TerminationType", "Test");
+			keyValueMap.put("TestSucesses", Integer.toString(this.successes));
+			keyValueMap.put("TestFailures", Integer.toString(this.failures));
+			keyValueMap.put("TestErrors", Integer.toString(this.errors));
+			this.successes = 0;
+			this.failures = 0;
+			this.errors = 0;
 		} else {
 			keyValueMap.put("TerminationType", "Normal");
 		}

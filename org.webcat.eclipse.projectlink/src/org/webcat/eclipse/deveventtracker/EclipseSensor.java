@@ -1,6 +1,11 @@
 package org.webcat.eclipse.deveventtracker;
 
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.*;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CLASS_NAME;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_METHODS;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_SIZE;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_STATEMENTS;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_ASSERTIONS;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_METHODS;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -33,6 +38,11 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -55,11 +65,6 @@ import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.util.GitIgnoreUtils;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.NoFilepatternException;
-import org.eclipse.jgit.lib.*;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * Provides all the necessary sensor initialization and collects data in this
@@ -297,14 +302,6 @@ public class EclipseSensor {
 				IDocument document = provider.getDocument(activeEditorPart
 						.getEditorInput());
 				
-				if (this.launchManager == null) {
-					this.launchManager = DebugPlugin.getDefault().getLaunchManager();
-				}
-				
-				this.launchListener = new LaunchSensor(this, projectURI);
-				
-				this.launchManager.addLaunchListener(this.launchListener);
-				
 				// Initially sets active buffer and threshold buffer.
 				// Otherwise a first activated buffer would not be recorded.
 				this.activeBufferSize = document.getLength();
@@ -312,6 +309,14 @@ public class EclipseSensor {
 				document.addDocumentListener(new DocumentListenerAdapter());
 			}
 		}
+		
+		if (this.launchManager == null) {
+			this.launchManager = DebugPlugin.getDefault().getLaunchManager();
+		}
+		
+		this.launchListener = new LaunchSensor(this, this.getProjectURI(this.getActiveTextEditor()));
+		
+		this.launchManager.addLaunchListener(this.launchListener);
 
 		// Handles breakpoint set/unset event.
 		IBreakpointManager bpManager = DebugPlugin.getDefault()
