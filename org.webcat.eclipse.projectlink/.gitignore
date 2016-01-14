@@ -1,1 +1,7 @@
 /bin/
+~*
+._*
+.TemporaryItems
+.DS_Store
+Thumbs.db
+/bin/

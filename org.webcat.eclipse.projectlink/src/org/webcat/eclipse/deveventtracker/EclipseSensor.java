@@ -1,6 +1,11 @@
 package org.webcat.eclipse.deveventtracker;
 
-import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.*;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CLASS_NAME;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_METHODS;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_SIZE;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_STATEMENTS;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_ASSERTIONS;
+import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_METHODS;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -23,6 +28,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageDeclaration;
 import org.eclipse.jdt.core.JavaCore;
@@ -32,6 +38,11 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -48,16 +59,12 @@ import org.webcat.eclipse.deveventtracker.addon.BuildErrorSensor;
 import org.webcat.eclipse.deveventtracker.addon.DebugSensor;
 import org.webcat.eclipse.deveventtracker.addon.JavaStatementMeter;
 import org.webcat.eclipse.deveventtracker.addon.JavaStructureChangeDetector;
+import org.webcat.eclipse.deveventtracker.addon.LaunchSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.util.GitIgnoreUtils;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.NoFilepatternException;
-import org.eclipse.jgit.lib.*;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * Provides all the necessary sensor initialization and collects data in this
@@ -151,7 +158,10 @@ public class EclipseSensor {
 	 * not.
 	 */
 	private WindowListenerAdapter windowListener;
-
+	
+	private ILaunchManager launchManager;
+	private LaunchSensor launchListener;
+	
 	/** Build error sensor. */
 	private BuildErrorSensor buildErrorSensor;
 
@@ -276,12 +286,13 @@ public class EclipseSensor {
 						.getFileResource(this.activeTextEditor);
 				URI projectURI = EclipseSensor.this
 						.getProjectURI(this.activeTextEditor);
-				Map<String, String> keyValueMap = new HashMap<String, String>();
+				final Map<String, String> keyValueMap = new HashMap<String, String>();
 				keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
 				keyValueMap.put(EclipseSensorConstants.UNIT_TYPE,
 						EclipseSensorConstants.FILE);
 				keyValueMap.put(EclipseSensorConstants.UNIT_NAME,
 						EclipseSensor.this.extractFileName(fileResource));
+
 				this.addDevEvent(EclipseSensorConstants.DEVEVENT_EDIT,
 						projectURI, fileResource, keyValueMap, "Opened "
 								+ fileResource.toString());
@@ -290,7 +301,7 @@ public class EclipseSensor {
 						.getDocumentProvider();
 				IDocument document = provider.getDocument(activeEditorPart
 						.getEditorInput());
-
+				
 				// Initially sets active buffer and threshold buffer.
 				// Otherwise a first activated buffer would not be recorded.
 				this.activeBufferSize = document.getLength();
@@ -298,6 +309,14 @@ public class EclipseSensor {
 				document.addDocumentListener(new DocumentListenerAdapter());
 			}
 		}
+		
+		if (this.launchManager == null) {
+			this.launchManager = DebugPlugin.getDefault().getLaunchManager();
+		}
+		
+		this.launchListener = new LaunchSensor(this, this.getProjectURI(this.getActiveTextEditor()));
+		
+		this.launchManager.addLaunchListener(this.launchListener);
 
 		// Handles breakpoint set/unset event.
 		IBreakpointManager bpManager = DebugPlugin.getDefault()
@@ -1189,6 +1208,12 @@ public class EclipseSensor {
 
 					URI fileResource = file.getLocationURI();
 					URI projectURI = file.getProject().getLocationURI();
+					
+					if (file.getName().contains("test") || file.getName().contains("Test")) {
+						keyValueMap.put("TestCodeEdit", "true");
+					} else {
+						keyValueMap.put("TestCodeEdit", "false");
+					}
 
 					StringBuffer message = new StringBuffer("Save File");
 					message.append(" : ").append(

@@ -3,19 +3,18 @@ package org.webcat.eclipse.deveventtracker.sensorbase;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.UUID;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -207,12 +206,12 @@ public class SensorBaseClient
 		// UUID.
 		UUID projectUuid = null;
 		String storedProjectUri = null;
-		try
-		{
-			FileReader fr = new FileReader(projectUri + "/.uuid");
-			BufferedReader br = new BufferedReader(fr);
+		File uuidFile = new File(projectUri + "/.uuid");
+		if (uuidFile.exists()) {
 			try
 			{
+				FileReader fr = new FileReader(uuidFile);
+				BufferedReader br = new BufferedReader(fr);
 				projectUuid = UUID.fromString(br.readLine());
 				storedProjectUri = br.readLine();
 				br.close();
@@ -227,10 +226,6 @@ public class SensorBaseClient
 			{
 				Activator.getDefault().log(e);
 			}
-		}
-		catch (FileNotFoundException e1)
-		{
-			Activator.getDefault().log(e1);
 		}
 
 		// We don't have the UUID in the file system, or the file's projectUri
@@ -335,10 +330,15 @@ public class SensorBaseClient
 					+ data.timestamp + "&runtime=" + data.runtime + "&tool="
 					+ data.tool + "&sensorDataType=" + data.sensorDataType
 					+ "&uri=" + data.uri;
-			if (data.findProperty("CommitHash") != null)
-			{
-				requestString +=
-	                "&CommitHash=" + data.findProperty("CommitHash").value;
+			int counter = 1;
+			for (Property p : data.getProperties().property) {
+				try {
+					requestString += "&name" + counter + "=" + URLEncoder.encode(p.getKey(), "UTF-8");
+					requestString += "&value" + counter + "=" + URLEncoder.encode(p.getValue(), "UTF-8");
+					counter++;
+				} catch (UnsupportedEncodingException e) {
+					Activator.getDefault().log(e);
+				}
 			}
 			Response response = makeRequest(Method.GET, requestString, null);
 			if (!response.getStatus().isSuccess())
@@ -377,11 +377,18 @@ public class SensorBaseClient
 						+ data.runtime + "&tool=" + data.tool
 						+ "&sensorDataType=" + data.sensorDataType + "&uri="
 						+ data.uri;
-				if (data.findProperty("CommitHash") != null)
-				{
-					requestString += "&commitHash="
-							+ data.findProperty("CommitHash").value;
+				
+				int counter = 1;
+				for (Property p : data.getProperties().property) {
+					try {
+						requestString += "&name" + counter + "=" + URLEncoder.encode(p.getKey(), "UTF-8");
+						requestString += "&value" + counter + "=" + URLEncoder.encode(p.getValue(), "UTF-8");
+						counter++;
+					} catch (UnsupportedEncodingException e) {
+						Activator.getDefault().log(e);
+					}
 				}
+				
 				Response response =
 	                makeRequest(Method.GET, requestString, null);
 				if (!response.getStatus().isSuccess())
@@ -630,38 +637,38 @@ public class SensorBaseClient
 	    String projectUri, String projectName)
 	    throws SensorBaseClientException
 	{
-		if (getPushToServer())
+		String requestString = "projectDownload?projectUri=" + projectUri
+			+ "&projectName=" + projectName + "&userUuid="
+			+ retrieveUser(getEmail()).toString();
+		Response response = makeRequest(Method.GET, requestString, null);
+		if (response.getStatus().isSuccess())
 		{
-			String requestString = "projectDownload?projectUri=" + projectUri
-				+ "&projectName=" + projectName + "&userUuid="
-				+ retrieveUser(getEmail()).toString();
-			Response response = makeRequest(Method.GET, requestString, null);
-			if (!response.getStatus().isSuccess())
-			{
-				throw new SensorBaseClientException(response.getStatus());
-			}
-			String responseText;
+			Activator.getDefault().getPreferenceStore().setValue(IPreferencesConstants.PUSH_TO_SERVER, true);
+		} else {
+			throw new SensorBaseClientException(response.getStatus());
+		}
+		
+		String responseText;
 
-			try
-			{
-				responseText = response.getEntity().getText();
-				String uuidString = parseUUID(responseText);
-				// Create new file containing UUID and projectUri
-				File studentProjectUUIDFileToCreate = new File(projectUri
-						+ "/.uuid");
-				FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
-				BufferedWriter out = new BufferedWriter(fw);
-				out.write(uuidString);
-				out.newLine();
-				out.write(projectUri);
-				out.flush();
-				fw.close();
-				out.close();
-			}
-			catch (IOException e)
-			{
-				Activator.getDefault().log(e);
-			}
+		try
+		{
+			responseText = response.getEntity().getText();
+			String uuidString = parseUUID(responseText);
+			// Create new file containing UUID and projectUri
+			File studentProjectUUIDFileToCreate = new File(projectUri
+					+ "/.uuid");
+			FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
+			BufferedWriter out = new BufferedWriter(fw);
+			out.write(uuidString);
+			out.newLine();
+			out.write(projectUri);
+			out.flush();
+			fw.close();
+			out.close();
+		}
+		catch (IOException e)
+		{
+			Activator.getDefault().log(e);
 		}
 	}
 
