@@ -24,14 +24,14 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.restlet.Client;
+import org.restlet.Context;
+import org.restlet.Request;
+import org.restlet.Response;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
 import org.restlet.data.Preference;
 import org.restlet.data.Protocol;
 import org.restlet.data.Reference;
-import org.restlet.Context;
-import org.restlet.Request;
-import org.restlet.Response;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.webcat.eclipse.projectlink.Activator;
@@ -653,18 +653,19 @@ public class SensorBaseClient
 		try
 		{
 			responseText = response.getEntity().getText();
-			String uuidString = parseUUID(responseText);
-			// Create new file containing UUID and projectUri
-			File studentProjectUUIDFileToCreate = new File(projectUri
-					+ "/.uuid");
-			FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
-			BufferedWriter out = new BufferedWriter(fw);
-			out.write(uuidString);
-			out.newLine();
-			out.write(projectUri);
-			out.flush();
-			fw.close();
-			out.close();
+			if (responseText.contains("<uuid>")) {
+				String uuidString = parseUUID(responseText);
+				// Create new file containing UUID and projectUri
+				File studentProjectUUIDFileToCreate = new File(projectUri + "/.uuid");
+				FileWriter fw = new FileWriter(studentProjectUUIDFileToCreate);
+				BufferedWriter out = new BufferedWriter(fw);
+				out.write(uuidString);
+				out.newLine();
+				out.write(projectUri);
+				out.flush();
+				fw.close();
+				out.close();
+			}
 		}
 		catch (IOException e)
 		{

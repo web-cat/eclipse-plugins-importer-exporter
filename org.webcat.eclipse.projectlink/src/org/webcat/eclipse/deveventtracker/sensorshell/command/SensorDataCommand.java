@@ -1,6 +1,7 @@
 package org.webcat.eclipse.deveventtracker.sensorshell.command;
 
 import java.util.Map;
+
 import org.webcat.eclipse.deveventtracker.sensorbase.Properties;
 import org.webcat.eclipse.deveventtracker.sensorbase.Property;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
