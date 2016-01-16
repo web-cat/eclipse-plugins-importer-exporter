@@ -63,6 +63,7 @@ public class AuthenticationDialog extends TitleAreaDialog
 	public AuthenticationDialog(Shell parentShell)
 	{
 		super(parentShell);
+		parentShell.setMinimumSize(getInitialSize());
 	}
 
 
@@ -87,32 +88,33 @@ public class AuthenticationDialog extends TitleAreaDialog
 		setTitle(Messages.AuthenticationDialog_Title);
 		setMessage(Messages.AuthenticationDialog_Message);
 
-		Composite area = (Composite) super.createDialogArea(parent);
+        Composite area = (Composite) super.createDialogArea(parent);
+        Composite container = new Composite(area, SWT.NONE);
 		GridLayout gl_container = new GridLayout(2, false);
 		gl_container.horizontalSpacing = 15;
 		gl_container.marginHeight = 15;
 		gl_container.marginWidth = 15;
 		gl_container.verticalSpacing = 10;
-		area.setLayout(gl_container);
-		area.setLayoutData(new GridData(GridData.FILL_BOTH));
+		container.setLayout(gl_container);
+        container.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-		Label lblUsername = new Label(area, SWT.NONE);
+		Label lblUsername = new Label(container, SWT.NONE);
 		lblUsername.setText(Messages.AuthenticationDialog_Username);
 
-		username = new Text(area, SWT.BORDER);
+		username = new Text(container, SWT.BORDER);
 		GridData gd_username = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_username.widthHint = 200;
 		username.setLayoutData(gd_username);
 
-		Label lblPassword = new Label(area, SWT.NONE);
+		Label lblPassword = new Label(container, SWT.NONE);
 		lblPassword.setText(Messages.AuthenticationDialog_Password);
 
-		password = new Text(area, SWT.BORDER | SWT.PASSWORD);
+		password = new Text(container, SWT.BORDER | SWT.PASSWORD);
 		GridData gd_password = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
 		gd_password.widthHint = 200;
 		password.setLayoutData(gd_password);
 
-		rememberPassword = new Button(area, SWT.CHECK);
+		rememberPassword = new Button(container, SWT.CHECK);
 		rememberPassword.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
 		rememberPassword.setText(Messages.AuthenticationDialog_Remember_Password);
 
