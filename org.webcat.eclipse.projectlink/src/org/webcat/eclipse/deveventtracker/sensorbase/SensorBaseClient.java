@@ -608,7 +608,7 @@ public class SensorBaseClient
 	    String projectUri = project.getLocationURI().getPath();
 		UUID userUuid = retrieveUser(getEmail());
 		UUID studentProjectUuid = retrieveStudentProject(projectUri);
-		String requestString = "submissionHappened?projectUuid="
+		String requestString = "submissionHappened?studentProjectUuid="
 				+ studentProjectUuid + "&userUuid=" + userUuid;
 		Response response = makeRequest(Method.GET, requestString, null);
 		if (response.getStatus().isSuccess())
