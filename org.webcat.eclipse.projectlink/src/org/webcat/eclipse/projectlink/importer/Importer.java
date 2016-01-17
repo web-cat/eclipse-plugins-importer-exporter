@@ -50,6 +50,7 @@ import org.eclipse.core.runtime.preferences.IPreferenceFilter;
 import org.eclipse.core.runtime.preferences.IPreferencesService;
 import org.eclipse.swt.widgets.Display;
 import org.w3c.dom.Document;
+import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.ProjectLinkException;
@@ -458,6 +459,7 @@ public class Importer
 		        }
 	
 		        workspaceProject.create(description, null);
+		        EclipseSensor.IMPORT = "true";
 		        workspaceProject.open(null);
 		        
 		        tracker.setProjectNameForUri(project.getURI(),

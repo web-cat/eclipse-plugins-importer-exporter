@@ -20,8 +20,6 @@
 package org.webcat.eclipse.projectlink.importer.model;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.w3c.dom.Node;
 import org.webcat.eclipse.projectlink.util.IndentingWriter;

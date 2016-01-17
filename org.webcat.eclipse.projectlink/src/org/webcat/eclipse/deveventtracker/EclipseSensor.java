@@ -85,6 +85,8 @@ import org.webcat.eclipse.projectlink.util.GitIgnoreUtils;
 public class EclipseSensor {
 	/** A singleton instance. */
 	private static EclipseSensor theInstance;
+	
+	public static String IMPORT = "true";
 
 	/**
 	 * The number of seconds of the state change after which timer will wake up
@@ -1145,7 +1147,13 @@ public class EclipseSensor {
 				keyValueMap.put(EclipseSensorConstants.UNIT_NAME, projectName);
 
 				if (((IProject) resource).isOpen()) {
-					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
+					if (Boolean.parseBoolean(EclipseSensor.IMPORT)) {
+						keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Import");
+						EclipseSensor.IMPORT = "false";
+					} else {
+						keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
+					}
+					
 					EclipseSensor.this.addDevEvent(
 							EclipseSensorConstants.DEVEVENT_EDIT, projectUri,
 							projectResource, keyValueMap,
