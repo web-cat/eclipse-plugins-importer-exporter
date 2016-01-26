@@ -756,6 +756,7 @@ public class SensorBaseClient
 			HttpURLConnection connection = (HttpURLConnection) new URL(
 					getHost()).openConnection();
 			connection.setRequestMethod("HEAD");
+			connection.setConnectTimeout(5000);
 			int responseCode = connection.getResponseCode();
 			if (responseCode != 200)
 			{
