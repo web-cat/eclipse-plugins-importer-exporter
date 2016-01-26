@@ -58,7 +58,7 @@ public class SensorDataCommand extends Command {
 	 */
 	public int send() throws SensorShellException {
 		int numDataSent = 0;
-
+		
 		// Return right away if there is no data to send
 		if (sensorDatas.getSensorData().isEmpty()) {
 			return 0;
@@ -70,28 +70,37 @@ public class SensorDataCommand extends Command {
 		// Do a ping to see that we can connect to the server.
 		if (SensorBaseClient.getInstance().isPingable()) {
 			// We can connect, and there is data, so attempt to send.
-			try {
-				this.shell.println("Attempting to send "
-						+ sensorDatas.getSensorData().size()
-						+ " sensor data instances. Available memory (bytes): "
-						+ getAvailableMemory());
-				// long startTime = new Date().getTime();
-				SensorBaseClient.getInstance().putSensorDataBatch(sensorDatas);
-				// this.shell.println("Successful send to " +
-				// this.properties.getSensorBaseHost() +
-				// " Elapsed time: " + (new Date().getTime() - startTime) +
-				// " ms.");
-				numDataSent = sensorDatas.getSensorData().size();
-				totalSent += numDataSent;
-				this.sensorDatas.getSensorData().clear();
-				return numDataSent;
-			} catch (SensorBaseClientException e) {
-				this.shell.println("Error sending data: " + e);
-				this.sensorDatas.getSensorData().clear();
-				Activator.getDefault().log("Could not send data", e);
-				throw new SensorShellException(
-						"Could not send data: error in SensorBaseClient", e);
-			}
+			this.shell.println("Attempting to send "
+					+ sensorDatas.getSensorData().size()
+					+ " sensor data instances. Available memory (bytes): "
+					+ getAvailableMemory());
+			// long startTime = new Date().getTime();
+			
+			// posts sensor data in a background thread
+			Runnable runnable = new Runnable() {
+				
+				public void run() {
+					try {
+						SensorBaseClient.getInstance().putSensorDataBatch(sensorDatas);
+					} catch (SensorBaseClientException e) {
+						SensorDataCommand.this.shell.println("Error sending data: " + e);
+						SensorDataCommand.this.sensorDatas.getSensorData().clear();
+						Activator.getDefault().log("Could not send data", e);
+//						throw new SensorShellException(
+//								"Could not send data: error in SensorBaseClient", e);
+					}
+				}
+			};
+			
+			Thread serverThread = new Thread(runnable);
+			serverThread.start();
+			// this.shell.println("Successful send to " +
+			// this.properties.getSensorBaseHost() +
+			// " Elapsed time: " + (new Date().getTime() - startTime) +
+			// " ms.");
+			numDataSent = sensorDatas.getSensorData().size();
+			totalSent += numDataSent;
+			this.sensorDatas.getSensorData().clear();
 		}
 
 		// If we got here, then the server was not available.

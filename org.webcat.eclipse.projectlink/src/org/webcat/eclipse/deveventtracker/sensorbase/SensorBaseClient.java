@@ -369,8 +369,9 @@ public class SensorBaseClient
 
 			for (SensorData data : batch.sensorData)
 			{
-				String studentProjectUuid = retrieveStudentProject(
-						data.getProjectUri()).toString();
+				UUID studentProjectUuid = retrieveStudentProject(
+						data.getProjectUri());
+
 				String requestString = "postSensorData?studentProjectUuid="
 						+ studentProjectUuid + "&userUuid=" + userUuid
 						+ "&time=" + data.timestamp + "&runtime="
@@ -487,7 +488,7 @@ public class SensorBaseClient
 	 *         this in its associated event.
 	 */
 	public RevCommit commitSnapshot(
-        String projectUri, Git git, String message, boolean needsPull)
+        String projectUri, final Git git, String message, boolean needsPull)
 	{
 		if (isPingable() && getPushToServer())
 		{
@@ -506,7 +507,7 @@ public class SensorBaseClient
 				config.save();
 
 				// Credentials are userUuid, projectUuid
-				UsernamePasswordCredentialsProvider cred =
+				final UsernamePasswordCredentialsProvider cred =
 				    new UsernamePasswordCredentialsProvider(
 						this.retrieveUser(getEmail()).toString(),
 						studentProjectUuid);
@@ -518,8 +519,21 @@ public class SensorBaseClient
 				// this repository.
 				if (needsPull)
 				{
-					git.pull().setRemote("origin").setCredentialsProvider(cred)
-						.call();
+					Runnable pullRun = new Runnable() {
+						
+						public void run() {
+							try {
+								git.pull().setRemote("origin").setCredentialsProvider(cred)
+								.call();
+							} catch (GitAPIException e) {
+								Activator.getDefault().log(e);
+							}
+						}
+					};
+					
+					Thread pullThread = new Thread(pullRun);
+					pullThread.start();
+					
 					// Update .gitignore file to include /bin directory
 					File gitignore = new File(projectUri, "/.gitignore");
 					FileWriter fw;
@@ -541,8 +555,22 @@ public class SensorBaseClient
 					git.rm().addFilepattern("README.txt").call();
 					git.commit().setMessage("Updating .gitignore file.").call();
 				}
-				git.push().setRemote("origin").setCredentialsProvider(cred)
-					.call();
+				
+				Runnable pushRun = new Runnable() {
+					
+					public void run() {
+						try {
+							git.push().setRemote("origin").setCredentialsProvider(cred)
+							.call();
+						} catch (GitAPIException e) {
+							Activator.getDefault().log(e);
+						}
+					}
+				};
+				
+				Thread pushThread = new Thread(pushRun);
+				pushThread.start();
+				
 				return commit;
 			}
 		    catch (GitAPIException e)
