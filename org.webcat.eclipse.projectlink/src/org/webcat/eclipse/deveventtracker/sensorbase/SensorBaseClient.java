@@ -369,9 +369,8 @@ public class SensorBaseClient
 
 			for (SensorData data : batch.sensorData)
 			{
-				UUID studentProjectUuid = retrieveStudentProject(
-						data.getProjectUri());
-
+				String studentProjectUuid = retrieveStudentProject(
+						data.getProjectUri()).toString();
 				String requestString = "postSensorData?studentProjectUuid="
 						+ studentProjectUuid + "&userUuid=" + userUuid
 						+ "&time=" + data.timestamp + "&runtime="
@@ -488,7 +487,7 @@ public class SensorBaseClient
 	 *         this in its associated event.
 	 */
 	public RevCommit commitSnapshot(
-        String projectUri, final Git git, String message, boolean needsPull)
+        String projectUri, Git git, String message, boolean needsPull)
 	{
 		if (isPingable() && getPushToServer())
 		{
@@ -507,7 +506,7 @@ public class SensorBaseClient
 				config.save();
 
 				// Credentials are userUuid, projectUuid
-				final UsernamePasswordCredentialsProvider cred =
+				UsernamePasswordCredentialsProvider cred =
 				    new UsernamePasswordCredentialsProvider(
 						this.retrieveUser(getEmail()).toString(),
 						studentProjectUuid);
@@ -519,21 +518,8 @@ public class SensorBaseClient
 				// this repository.
 				if (needsPull)
 				{
-					Runnable pullRun = new Runnable() {
-						
-						public void run() {
-							try {
-								git.pull().setRemote("origin").setCredentialsProvider(cred)
-								.call();
-							} catch (GitAPIException e) {
-								Activator.getDefault().log(e);
-							}
-						}
-					};
-					
-					Thread pullThread = new Thread(pullRun);
-					pullThread.start();
-					
+					git.pull().setRemote("origin").setCredentialsProvider(cred)
+						.call();
 					// Update .gitignore file to include /bin directory
 					File gitignore = new File(projectUri, "/.gitignore");
 					FileWriter fw;
@@ -555,22 +541,8 @@ public class SensorBaseClient
 					git.rm().addFilepattern("README.txt").call();
 					git.commit().setMessage("Updating .gitignore file.").call();
 				}
-				
-				Runnable pushRun = new Runnable() {
-					
-					public void run() {
-						try {
-							git.push().setRemote("origin").setCredentialsProvider(cred)
-							.call();
-						} catch (GitAPIException e) {
-							Activator.getDefault().log(e);
-						}
-					}
-				};
-				
-				Thread pushThread = new Thread(pushRun);
-				pushThread.start();
-				
+				git.push().setRemote("origin").setCredentialsProvider(cred)
+					.call();
 				return commit;
 			}
 		    catch (GitAPIException e)
@@ -756,7 +728,6 @@ public class SensorBaseClient
 			HttpURLConnection connection = (HttpURLConnection) new URL(
 					getHost()).openConnection();
 			connection.setRequestMethod("HEAD");
-			connection.setConnectTimeout(5000);
 			int responseCode = connection.getResponseCode();
 			if (responseCode != 200)
 			{
