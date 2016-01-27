@@ -87,6 +87,8 @@ public class EclipseSensor {
 	private static EclipseSensor theInstance;
 	
 	public static String IMPORT = "true";
+	
+	public static boolean POST_HAPPENING = false;
 
 	/**
 	 * The number of seconds of the state change after which timer will wake up
@@ -99,6 +101,8 @@ public class EclipseSensor {
 	 * up again.
 	 */
 	private long timeBuffTransInterval = 5;
+	
+	private long timerOfflineRecoveryInterval = 10;
 
 	/**
 	 * The ITextEdtior instance to hold the active editor's (file's)
@@ -154,6 +158,8 @@ public class EclipseSensor {
 	 * timer wakes up.
 	 */
 	private TimerTask buffTransTimerTask;
+	
+	private TimerTask offlineRecoveryTimerTask;
 
 	/**
 	 * The WindowListerAdapter instance to check if this instance is added or
@@ -185,6 +191,7 @@ public class EclipseSensor {
 		this.timer = new Timer();
 		this.stateChangeTimerTask = new StateChangeTimerTask();
 		this.buffTransTimerTask = new BuffTransTimertask();
+		this.offlineRecoveryTimerTask = new OfflineRecoveryTimerTask();
 
 		// Load sensor's setting.
 		this.sensorShellWrapper = new SensorShellWrapper(
@@ -245,7 +252,13 @@ public class EclipseSensor {
 					this.timeBuffTransInterval * 1000,
 					this.timeBuffTransInterval * 1000);
 		}
-
+		
+		if (this.offlineRecoveryTimerTask.scheduledExecutionTime() == 0) {
+			this.timer.schedule(this.offlineRecoveryTimerTask, 
+					this.timerOfflineRecoveryInterval * 1000, 
+					this.timerOfflineRecoveryInterval * 1000);
+		}
+		
 		registerListeners();
 	}
 
@@ -402,6 +415,14 @@ public class EclipseSensor {
 	/** Class name to file URI map. */
 	private Map<String, URI> class2FileMap = new HashMap<String, URI>();
 
+	public void processOfflineRecovery() {
+		try {
+			this.sensorShellWrapper.getShell().recoverOfflineData();
+		} catch (SensorShellException e) {
+			Activator.getDefault().log("Error recovering offline data", e);
+		}
+	}
+	
 	/**
 	 * Process the state change activity whose element consists of the
 	 * (absolute) file name and its buffer size (or file size).

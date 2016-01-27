@@ -8,12 +8,16 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Properties;
 
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.webcat.eclipse.deveventtracker.EclipseSensor;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorDatas;
 import org.webcat.eclipse.projectlink.Activator;
@@ -31,7 +35,6 @@ public class OfflineManager {
 
 	/** The directory where offline data is stored. */
 	private File offlineDir;
-
 	/** Holds the sensorShellProperties instance from the parent sensor shell. */
 	private SensorShellProperties properties;
 
@@ -73,30 +76,32 @@ public class OfflineManager {
 	 */
 	public void store(SensorDatas sensorDatas) {
 		if (sensorDatas.getSensorData().size() > 0) {
-			SimpleDateFormat fileTimestampFormat = new SimpleDateFormat(
-					"yyyy.MM.dd.HH.mm.ss.SSS", Locale.US);
-			String fileStampString = fileTimestampFormat.format(new Date());
-			File outFile = new File(this.offlineDir, fileStampString + ".data");
-			try {
-				FileWriter fw = new FileWriter(outFile);
-				BufferedWriter out = new BufferedWriter(fw);
-				out.write(sensorDatas.getFileString());
-				out.flush();
-				out.close();
-			} catch (IOException e) {
-				Activator.getDefault().log(e);
-			}
+			synchronized (this) {
+				SimpleDateFormat fileTimestampFormat = new SimpleDateFormat(
+						"yyyy.MM.dd.HH.mm.ss.SSS", Locale.US);
+				String fileStampString = fileTimestampFormat.format(new Date());
+				File outFile = new File(this.offlineDir, fileStampString + ".data");
+				try {		
+					FileWriter fw = new FileWriter(outFile);
+					BufferedWriter out = new BufferedWriter(fw);
+					out.write(sensorDatas.getFileString());
+					out.flush();
+					out.close();
+				} catch (IOException e) {
+					Activator.getDefault().log(e);
+				}
 
-			try {
-				parentShell.println("Stored "
-						+ sensorDatas.getSensorData().size()
-						+ " sensor data instances in: "
-						+ outFile.getAbsolutePath());
-				this.hasOfflineData = true;
-			} catch (Exception e) {
-				parentShell.println("Error writing the offline file "
-						+ outFile.getName() + " " + e);
-				Activator.getDefault().log(e);
+				try {
+					parentShell.println("Stored "
+							+ sensorDatas.getSensorData().size()
+							+ " sensor data instances in: "
+							+ outFile.getAbsolutePath());
+					this.hasOfflineData = true;
+				} catch (Exception e) {
+					parentShell.println("Error writing the offline file "
+							+ outFile.getName() + " " + e);
+					Activator.getDefault().log(e);
+				}
 			}
 		}
 	}
@@ -123,9 +128,23 @@ public class OfflineManager {
 	 *             If problems occur sending the recovered data.
 	 */
 	public void recover() throws SensorShellException {
+		System.out.println("Recovering...");
 		// Return immediately if there are no offline files to process.
+		File[] filesToPost;
+		synchronized (this) {
+			try {
+				filesToPost = this.offlineDir.listFiles(new ExtensionFileFilter(
+						".data"));
+				for (File current : filesToPost) {
+					File renamed = new File(this.offlineDir, current.getName() + "post");
+					current.renameTo(renamed);
+				}
+			} catch (Exception e) {
+				Activator.getDefault().log(e);
+			}
+		}
 		File[] xmlFiles = this.offlineDir.listFiles(new ExtensionFileFilter(
-				".data"));
+				".datapost"));
 		if (xmlFiles.length == 0) {
 			return;
 		}
@@ -171,25 +190,27 @@ public class OfflineManager {
 				SensorDatas sensorDatas = makeSensorDatasFromFile(xmlFiles[i]);
 				shell.println("Found " + sensorDatas.getSensorData().size()
 						+ " instances.");
-				for (SensorData data : sensorDatas.getSensorData()) {
-					shell.add(data);
-				}
-				// Try to send the data.
-				shell.println("About to send data");
-				int numSent = shell.send();
+//				for (SensorData data : sensorDatas.getSensorData()) {
+//					shell.add(data);
+//				}
+//				// Try to send the data.
+//				shell.println("About to send data");
+//				int numSent = shell.send();
+				SensorBaseClient.getInstance().putSensorDataBatch(sensorDatas);
+				int numSent = sensorDatas.getSensorData().size();
 				shell.println("Successfully sent: " + numSent + " instances.");
 				// If all the data was successfully sent, then we delete the
 				// file.
 				fileStream.close();
-				if (numSent == sensorDatas.getSensorData().size()) {
+//				if (numSent == sensorDatas.getSensorData().size()) {
 					boolean isDeleted = xmlFiles[i].delete();
 					System.out.println(xmlFiles[i].getName() + " was deleted: " + isDeleted);
 					shell.println("Trying to delete " + xmlFiles[i].getName()
 							+ ". Success: " + isDeleted);
-				} else {
-					shell.println("Did not send all instances. " + xmlFiles[i]
-							+ " not deleted.");
-				}
+//				} else {
+//					shell.println("Did not send all instances. " + xmlFiles[i]
+//							+ " not deleted.");
+//				}
 			} catch (Exception e) {
 				shell.println("Error recovering data from: " + xmlFiles[i]);
 				Activator.getDefault().log(e);
@@ -202,6 +223,7 @@ public class OfflineManager {
 				}
 			}
 		}
+		
 		shell.quit();
 	}
 
