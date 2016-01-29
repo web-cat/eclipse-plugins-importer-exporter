@@ -59,12 +59,10 @@ public class SensorDatas
 
 	public String getFileString() {
 		String representation = "";
-		representation += "<SensorDatas>" + "\n";
 		for (SensorData data : this.sensorData) 
 		{
 			representation += data.getFileString();
 		}
-		representation += "</SensorDatas>" + "\n";
 		return representation;		
 	}
 

@@ -8,15 +8,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Properties;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorDatas;
@@ -241,8 +238,7 @@ public class OfflineManager {
 		
 		String currentLine;
 		try {
-			currentLine = br.readLine();
-			while(!currentLine.equals("</SensorDatas>"))
+			while((currentLine = br.readLine()) != null)
 			{
 				if (currentLine.equals("<Timestamp>")) {
 					currentData.setTimestamp(Long.parseLong(br.readLine()));
@@ -277,7 +273,6 @@ public class OfflineManager {
 					datas.getSensorData().add(currentData);
 					currentData = new SensorData();
 				}
-				currentLine = br.readLine();
 			}
 			br.close();
 			

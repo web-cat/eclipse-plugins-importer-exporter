@@ -88,7 +88,7 @@ public class EclipseSensor {
 	
 	public static String IMPORT = "true";
 	
-	public static boolean POST_HAPPENING = false;
+	public static volatile boolean POST_HAPPENING = false;
 
 	/**
 	 * The number of seconds of the state change after which timer will wake up

@@ -20,9 +20,11 @@ public class OfflineRecoveryTimerTask extends TimerTask {
 
 	public void run() {
 		try {
-			EclipseSensor.POST_HAPPENING = true;
-			EclipseSensor.getInstance().processOfflineRecovery();
-			EclipseSensor.POST_HAPPENING = false;
+			if (!EclipseSensor.POST_HAPPENING) {
+				EclipseSensor.POST_HAPPENING = true;
+				EclipseSensor.getInstance().processOfflineRecovery();
+				EclipseSensor.POST_HAPPENING = false;
+			}
 		} catch (SensorShellException e) {
 			Activator.getDefault().log("Could't get EclipseSensor instance", e);
 		}
