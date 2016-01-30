@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Semaphore;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -86,9 +87,30 @@ public class EclipseSensor {
 	/** A singleton instance. */
 	private static EclipseSensor theInstance;
 	
+	/**
+	 * A boolean flag that keeps track of whether a file open
+	 * event comes directly after an import or not.
+	 */
 	public static String IMPORT = "true";
 	
+	/**
+	 * Volatile boolean flag to keep track of whether a post to the server
+	 * is currently happening.
+	 */
 	public static volatile boolean POST_HAPPENING = false;
+	
+	/**
+	 * Volatile boolean flag to check whether the shared offlineData.data file
+	 * has been requested by the server posting task.
+	 */
+	public static volatile boolean FILE_REQUESTED = false;
+	
+	/**
+	 * Ensures that only one of two background tasks (writing offline data, or 
+	 * posting data to the server) can access the file offlineData.data at a time.
+	 * Starts off with 0 available permits.
+	 */
+	private Semaphore fileReady;
 
 	/**
 	 * The number of seconds of the state change after which timer will wake up
@@ -102,7 +124,10 @@ public class EclipseSensor {
 	 */
 	private long timeBuffTransInterval = 5;
 	
-	private long timerOfflineRecoveryInterval = 10;
+	/**
+	 * The interval at which to periodically try to post data to the server.
+	 */
+	private long timerPostToServerInterval = 10;
 
 	/**
 	 * The ITextEdtior instance to hold the active editor's (file's)
@@ -159,7 +184,10 @@ public class EclipseSensor {
 	 */
 	private TimerTask buffTransTimerTask;
 	
-	private TimerTask offlineRecoveryTimerTask;
+	/**
+	 * The TimerTask instance to do the task of posting sensor data to the server.
+	 */
+	private TimerTask postToServerTimerTask;
 
 	/**
 	 * The WindowListerAdapter instance to check if this instance is added or
@@ -188,10 +216,11 @@ public class EclipseSensor {
 	 *             If error in getting sensorshell.
 	 */
 	private EclipseSensor() throws SensorShellException {
-		this.timer = new Timer();
+		this.timer = new Timer("TimerThread");
 		this.stateChangeTimerTask = new StateChangeTimerTask();
 		this.buffTransTimerTask = new BuffTransTimertask();
-		this.offlineRecoveryTimerTask = new OfflineRecoveryTimerTask();
+		this.postToServerTimerTask = new PostToServerTimerTask();
+		this.fileReady = new Semaphore(0);
 
 		// Load sensor's setting.
 		this.sensorShellWrapper = new SensorShellWrapper(
@@ -253,10 +282,10 @@ public class EclipseSensor {
 					this.timeBuffTransInterval * 1000);
 		}
 		
-		if (this.offlineRecoveryTimerTask.scheduledExecutionTime() == 0) {
-			this.timer.schedule(this.offlineRecoveryTimerTask, 
-					this.timerOfflineRecoveryInterval * 1000, 
-					this.timerOfflineRecoveryInterval * 1000);
+		if (this.postToServerTimerTask.scheduledExecutionTime() == 0) {
+			this.timer.schedule(this.postToServerTimerTask, 
+					this.timerPostToServerInterval * 1000, 
+					this.timerPostToServerInterval * 1000);
 		}
 		
 		registerListeners();
@@ -344,6 +373,10 @@ public class EclipseSensor {
 		// Creates instance to handle build error.
 		this.buildErrorSensor = new BuildErrorSensor(this);
 	}
+	
+	public void releaseSemaphore() {
+		this.fileReady.release();
+	}
 
 	/**
 	 * Processes development events that occur within the Eclipse browser. The
@@ -416,10 +449,16 @@ public class EclipseSensor {
 	private Map<String, URI> class2FileMap = new HashMap<String, URI>();
 
 	public void processOfflineRecovery() {
+		FILE_REQUESTED = true;
 		try {
+			this.fileReady.acquire();
+			FILE_REQUESTED = false;
 			this.sensorShellWrapper.getShell().recoverOfflineData();
 		} catch (SensorShellException e) {
 			Activator.getDefault().log("Error recovering offline data", e);
+		} catch (InterruptedException e) {
+			Activator.getDefault().log("The thread was interrupted before it could"
+					+ " acquire permission to modify the file.", e);
 		}
 	}
 	

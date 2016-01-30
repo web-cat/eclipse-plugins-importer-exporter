@@ -12,12 +12,15 @@ import org.webcat.eclipse.projectlink.Activator;
  * @author ayaan
  *
  */
-public class OfflineRecoveryTimerTask extends TimerTask {
+public class PostToServerTimerTask extends TimerTask {
 	
-	public OfflineRecoveryTimerTask() {
+	public PostToServerTimerTask() {
 		super();
 	}
 
+	/**
+	 * Attempts to recover offline data and sent it to the server.
+	 */
 	public void run() {
 		try {
 			if (!EclipseSensor.POST_HAPPENING) {

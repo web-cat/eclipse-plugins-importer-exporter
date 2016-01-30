@@ -8,12 +8,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 import java.util.Properties;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorDatas;
@@ -40,9 +40,18 @@ public class OfflineManager {
 
 	/** The tool that was created the parent shell. */
 	private String tool;
+	
+	/**
+	 * Constants for the filenames of the files used for offline storage and data to post,
+	 * respectively.
+	 */
+	private static final String OFFLINE_DATA_FILE = "offlineData.data";
+	private static final String POST_DATA_FILE = "postData.data";
 
 	/** Whether or not data has been stored offline. */
 	boolean hasOfflineData = false;
+	
+	private LinkedBlockingQueue<SensorData> blockingQueue;
 
 	/**
 	 * Creates an OfflineManager given the parent shell and the tool.
@@ -57,45 +66,81 @@ public class OfflineManager {
 		this.properties = shell.getProperties();
 		this.tool = tool;
 		this.offlineDir = new File(ResourcesPlugin.getWorkspace().getRoot().getLocationURI().getPath(), "/deveventtracker/offline/");
+		this.blockingQueue = new LinkedBlockingQueue<SensorData>();
 		boolean dirOk = this.offlineDir.mkdirs();
 		if (!dirOk && !this.offlineDir.exists()) {
 			throw new RuntimeException("mkdirs failed");
 		}
+		this.startWriteOfflineTask();
 	}
 
 	/**
-	 * Stores a SensorDatas instance to a serialized file in the offline
-	 * directory. Does nothing if there are no sensordata instances in the
-	 * SensorDatas instance.
+	 * Stores SensorDatas inside a blocking in-memory data structure
+	 * that is polled on a background thread for data to send to the
+	 * server.
 	 * 
 	 * @param sensorDatas
 	 *            The SensorDatas instance to be stored.
 	 */
 	public void store(SensorDatas sensorDatas) {
 		if (sensorDatas.getSensorData().size() > 0) {
-			synchronized (this) {
-				File outFile = new File(this.offlineDir, "offlineData.data");
-				try {		
-					FileWriter fw = new FileWriter(outFile);
-					BufferedWriter out = new BufferedWriter(fw);
-					out.write(sensorDatas.getFileString());
-					out.flush();
-					out.close();
-				} catch (IOException e) {
-					Activator.getDefault().log(e);
+			
+			for (SensorData current : sensorDatas.getSensorData()) {
+				this.blockingQueue.add(current);
+			}		
+			
+			try {
+				parentShell.println("Stored "
+						+ sensorDatas.getSensorData().size()
+						+ " sensor data instances in memory.");
+				this.hasOfflineData = true;
+			} catch (Exception e) {
+				parentShell.println("Error storing the offline data.");
+				Activator.getDefault().log(e);
+			}
+		}
+	}
+	
+	private void startWriteOfflineTask() {
+		Thread offlineThread = new Thread(new Runnable() {
+			public void run() {
+				OfflineManager.this.writeOffline();
+			}
+		});
+		offlineThread.setName("OfflineWritingThread");
+		offlineThread.start();
+	}
+	
+	private void writeOffline() {
+		File offline = new File(this.offlineDir, OFFLINE_DATA_FILE);
+		BufferedWriter writer = null;
+		try {
+			while (true) {
+				FileWriter fw = new FileWriter(offline, true);
+				writer = new BufferedWriter(fw);
+				SensorData data = this.blockingQueue.poll(2, TimeUnit.SECONDS);
+				if (data != null) {
+					this.parentShell.println(Thread.currentThread().getName() + ": Got data, writing to file.");
+					writer.write(data.getFileString());
 				}
-
-				try {
-					parentShell.println("Stored "
-							+ sensorDatas.getSensorData().size()
-							+ " sensor data instances in: "
-							+ outFile.getAbsolutePath());
-					this.hasOfflineData = true;
-				} catch (Exception e) {
-					parentShell.println("Error writing the offline file "
-							+ outFile.getName() + " " + e);
-					Activator.getDefault().log(e);
+				
+				writer.flush();
+				
+				if (EclipseSensor.FILE_REQUESTED) {
+					this.parentShell.println(Thread.currentThread().getName() + ": File requested. Releasing "
+							+ "semaphore.");
+					writer.close();
+					offline.renameTo(new File(this.offlineDir, POST_DATA_FILE));
+					EclipseSensor.getInstance().releaseSemaphore();
 				}
+			}
+		} catch (Exception e) {
+			Activator.getDefault().log(e);
+		} finally {
+			try {
+				writer.close();
+			} catch (IOException e) {
+				Activator.getDefault().log(e);
 			}
 		}
 	}
@@ -111,38 +156,26 @@ public class OfflineManager {
 	}
 
 	/**
-	 * Attempts to resend any previously stored SensorDatas instances from their
-	 * serialized files. Creates a new sensorshell instance to do the sending.
-	 * Each SensorDatas instance is deserialized, then each SensorData instance
-	 * inside is sent to the SensorShell. This gives the SensorShell an
-	 * opportunity to send batches off at whatever interval it chooses. All
-	 * serialized files are deleted after being processed if successful.
+	 * Attempts to send SensorData from the postData.data file. If the
+	 * server is pingable and the data is sent, the file is deleted. This
+	 * entire process takes place in a background thread.
 	 * 
 	 * @throws SensorShellException
 	 *             If problems occur sending the recovered data.
 	 */
 	public void recover() throws SensorShellException {
-		System.out.println("Recovering...");
 		// Return immediately if there are no offline files to process.
-		File offlineData = new File(this.offlineDir, "offlineData.data");
-		File postData = new File(this.offlineDir, "postData.data");
+		File postData = new File(this.offlineDir, POST_DATA_FILE);
 		
-		if (!offlineData.exists()) {
+		if (!postData.exists()) {
 			return;
 		}
 		
-		synchronized (this) {
-			try {
-				offlineData.renameTo(postData);
-			} catch (Exception e) {
-				Activator.getDefault().log(e);
-			}
+		if (!SensorBaseClient.getInstance().isPingable()) {
+			return;
 		}
-
-		// Tell the parent shell log that we're going to try to do offline
-		// recovery.
-//		parentShell.println("Invoking offline recovery on " + xmlFiles.length
-//				+ " files.");
+		
+		this.parentShell.println(Thread.currentThread().getName() + ": posting to server.");
 
 		// Create a new properties instance with offline recovery/storage
 		// disabled.
@@ -166,11 +199,8 @@ public class OfflineManager {
 		// Create the offline sensor shell to be used for sending this data.
 		SingleSensorShell shell = new SingleSensorShell(shellProps, false,
 				offlineTool);
-//		shell.println("Invoking offline recovery on " + xmlFiles.length
-//				+ " files.");
 		FileInputStream fileStream = null;
 
-		// For each offline file to recover
 		try {
 			// Reconstruct the SensorDatas instances from the serialized
 			// files.
@@ -180,27 +210,14 @@ public class OfflineManager {
 			SensorDatas sensorDatas = makeSensorDatasFromFile(postData);
 			shell.println("Found " + sensorDatas.getSensorData().size()
 					+ " instances.");
-//				for (SensorData data : sensorDatas.getSensorData()) {
-//					shell.add(data);
-//				}
-//				// Try to send the data.
-//				shell.println("About to send data");
-//				int numSent = shell.send();
 			SensorBaseClient.getInstance().putSensorDataBatch(sensorDatas);
 			int numSent = sensorDatas.getSensorData().size();
 			shell.println("Successfully sent: " + numSent + " instances.");
-			// If all the data was successfully sent, then we delete the
-			// file.
 			fileStream.close();
-//				if (numSent == sensorDatas.getSensorData().size()) {
 				boolean isDeleted = postData.delete();
 				System.out.println(postData.getName() + " was deleted: " + isDeleted);
 				shell.println("Trying to delete " + postData.getName()
 						+ ". Success: " + isDeleted);
-//				} else {
-//					shell.println("Did not send all instances. " + xmlFiles[i]
-//							+ " not deleted.");
-//				}
 		} catch (Exception e) {
 			shell.println("Error recovering data from: " + postData);
 			Activator.getDefault().log(e);
