@@ -9,7 +9,10 @@ import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.projectlink.Activator;
 
 /**
- * @author ayaan
+ * Implements Eclipse sensor timer task that can be executed by a timer. The
+ * timer task attempts to recover offline data (if any) and send it to the server.
+ * 
+ * @author Ayaan Kazerouni
  *
  */
 public class PostToServerTimerTask extends TimerTask {

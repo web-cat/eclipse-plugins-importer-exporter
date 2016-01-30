@@ -421,6 +421,7 @@ public class SensorBaseClient
 		request.getClientInfo().getAcceptedMediaTypes().add(htmlMedia);
 		if (this.isTraceEnabled)
 		{
+			System.out.println(Thread.currentThread().getName());
 			System.out.println(
                 "SensorBaseClient Tracing: " + method + " " + reference);
 			if (entity != null)
