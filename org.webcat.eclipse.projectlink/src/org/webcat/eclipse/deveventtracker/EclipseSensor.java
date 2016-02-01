@@ -1235,7 +1235,7 @@ public class EclipseSensor {
 						.endsWith(EclipseSensorConstants.JAVA_EXT)) {
 					IFile file = (IFile) resource;
 
-					Map<String, String> keyValueMap = new HashMap<String, String>();
+					final Map<String, String> keyValueMap = new HashMap<String, String>();
 
 					keyValueMap.put("Language", "java");
 					keyValueMap.put(EclipseSensorConstants.UNIT_TYPE,
@@ -1274,8 +1274,8 @@ public class EclipseSensor {
 								testAssertionCount);
 					}
 
-					URI fileResource = file.getLocationURI();
-					URI projectURI = file.getProject().getLocationURI();
+					final URI fileResource = file.getLocationURI();
+					final URI projectURI = file.getProject().getLocationURI();
 					
 					if (file.getName().contains("test") || file.getName().contains("Test")) {
 						keyValueMap.put("TestCodeEdit", "true");
@@ -1283,23 +1283,32 @@ public class EclipseSensor {
 						keyValueMap.put("TestCodeEdit", "false");
 					}
 
-					StringBuffer message = new StringBuffer("Save File");
+					final StringBuffer message = new StringBuffer("Save File");
 					message.append(" : ").append(
 							EclipseSensor.this.extractFileName(fileResource));
 
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Save");
-					String commitMessage = "File " + fileResource.getPath()
+					final String commitMessage = "File " + fileResource.getPath()
 							+ " changed at "
 							+ new Date(System.currentTimeMillis());
-					ObjectId hash = EclipseSensor.this.commitSnapshot(
-							projectURI.getPath(), commitMessage);
-					if (hash != null) {
-						keyValueMap.put("CommitHash", hash.getName());
-					}
-					EclipseSensor.this.addDevEvent(
-							EclipseSensorConstants.DEVEVENT_EDIT, projectURI,
-							fileResource, keyValueMap, message.toString());
-
+					
+					TimerTask saveTask = new TimerTask() {
+						
+						@Override
+						public void run() {
+							ObjectId hash = EclipseSensor.this.commitSnapshot(
+									projectURI.getPath(), commitMessage);
+							if (hash != null) {
+								keyValueMap.put("CommitHash", hash.getName());
+							}
+							
+							EclipseSensor.this.addDevEvent(
+									EclipseSensorConstants.DEVEVENT_EDIT, projectURI,
+									fileResource, keyValueMap, message.toString());
+						}
+					};
+					
+					EclipseSensor.this.timer.schedule(saveTask, 0);
 				}
 
 				// Visit the children because it is not necessary for the saving
