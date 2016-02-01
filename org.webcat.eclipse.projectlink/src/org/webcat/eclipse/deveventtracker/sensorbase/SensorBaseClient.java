@@ -12,6 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import org.eclipse.core.resources.IProject;
@@ -34,6 +35,8 @@ import org.restlet.data.Protocol;
 import org.restlet.data.Reference;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
+import org.webcat.eclipse.deveventtracker.EclipseSensor;
+import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
@@ -680,35 +683,47 @@ public class SensorBaseClient
 	 * @param e
 	 *            The exception to log.
 	 */
-	public void pluginExceptionHappened(Exception e)
+	public void pluginExceptionHappened(final Exception e)
 	{
-		try
-		{
-			UUID userUuid = retrieveUser(getEmail());
-			String exceptionClass = e.getClass().getCanonicalName();
-			String exceptionMessage = e.getMessage();
+		TimerTask task = new TimerTask() {
+			
+			@Override
+			public void run() {
+				try
+				{
+					UUID userUuid = retrieveUser(getEmail());
+					String exceptionClass = e.getClass().getCanonicalName();
+					String exceptionMessage = e.getMessage();
 
-			StackTraceElement topStackElement = e.getStackTrace()[0];
-			String className = topStackElement.getClassName();
-			String methodName = topStackElement.getMethodName();
-			String fileName = topStackElement.getFileName();
-			int lineNumber = topStackElement.getLineNumber();
+					StackTraceElement topStackElement = e.getStackTrace()[0];
+					String className = topStackElement.getClassName();
+					String methodName = topStackElement.getMethodName();
+					String fileName = topStackElement.getFileName();
+					int lineNumber = topStackElement.getLineNumber();
 
-			StringWriter errors = new StringWriter();
-			e.printStackTrace(new PrintWriter(errors));
-			String stackTrace = errors.toString();
+					StringWriter errors = new StringWriter();
+					e.printStackTrace(new PrintWriter(errors));
+					String stackTrace = errors.toString();
 
-			String requestString = "pluginExceptionHappened" + "?userUuid="
-				+ userUuid + "&exceptionClass=" + exceptionClass
-				+ "&exceptionMessage=" + exceptionMessage + "&className="
-				+ className + "&methodName=" + methodName + "&fileName="
-				+ fileName + "&lineNumber=" + lineNumber + "&stackTrace="
-				+ stackTrace;
-			makeRequest(Method.GET, requestString, null);
-		}
-		catch (SensorBaseClientException e1)
-		{
-			// Don't want to loop infinitely, so don't log this exception.
+					String requestString = "pluginExceptionHappened" + "?userUuid="
+						+ userUuid + "&exceptionClass=" + exceptionClass
+						+ "&exceptionMessage=" + exceptionMessage + "&className="
+						+ className + "&methodName=" + methodName + "&fileName="
+						+ fileName + "&lineNumber=" + lineNumber + "&stackTrace="
+						+ stackTrace;
+					makeRequest(Method.GET, requestString, null);
+				}
+				catch (SensorBaseClientException e1)
+				{
+					// Don't want to loop infinitely, so don't log this exception.
+				}
+			}
+		};
+		
+		try {
+			EclipseSensor.getInstance().schedulePluginExceptionReport(task);
+		} catch (SensorShellException e1) {
+			// Don't log to avoid indefinite loop
 		}
 	}
 

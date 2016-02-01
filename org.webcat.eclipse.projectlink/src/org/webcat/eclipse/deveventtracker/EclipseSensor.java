@@ -127,7 +127,7 @@ public class EclipseSensor {
 	/**
 	 * The interval at which to periodically try to post data to the server.
 	 */
-	private long timerPostToServerInterval = 10;
+	private long timerPostToServerInterval = 60;
 
 	/**
 	 * The ITextEdtior instance to hold the active editor's (file's)
@@ -374,6 +374,9 @@ public class EclipseSensor {
 		this.buildErrorSensor = new BuildErrorSensor(this);
 	}
 	
+	/**
+	 * Releases the semaphore controlling access to the offline data store.
+	 */
 	public void releaseSemaphore() {
 		this.fileReady.release();
 	}
@@ -526,6 +529,15 @@ public class EclipseSensor {
 			this.latestStateChangeFile = fileResource;
 			this.latestStateChangeFileSize = activeBufferSize;
 		}
+	}
+	
+	/**
+	 * Schedules a one-time task of sending a plugin exception report to the
+	 * server.
+	 * @param exceptionReportTask
+	 */
+	public void schedulePluginExceptionReport(TimerTask exceptionReportTask) {
+		this.timer.schedule(exceptionReportTask, 0);
 	}
 
 	/**
