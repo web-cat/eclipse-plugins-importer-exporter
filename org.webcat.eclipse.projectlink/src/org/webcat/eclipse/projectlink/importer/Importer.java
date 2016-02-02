@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimerTask;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -52,6 +53,7 @@ import org.eclipse.swt.widgets.Display;
 import org.w3c.dom.Document;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClientException;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.ProjectLinkException;
 import org.webcat.eclipse.projectlink.importer.model.ImportNode;
@@ -378,9 +380,9 @@ public class Importer
     // ----------------------------------------------------------
     private void importProject(
     		ImporterManifest manifest,
-    		ProjectNode project,
+    		final ProjectNode project,
     		IProgressMonitor monitor,
-    		List<ImportError> errors)
+    		final List<ImportError> errors)
     {
     	ProjectTracker tracker = ProjectTracker.getInstance();
     	String trackedName = tracker.projectNameForUri(project.getURI());
@@ -436,10 +438,10 @@ public class Importer
 	        	descriptionStream = zipFile.getInputStream(entry);
 	        }
 	
-	        IProjectDescription description =
+	        final IProjectDescription description =
 	        		workspace.loadProjectDescription(descriptionStream);
 	
-	        IProject workspaceProject =
+	        final IProject workspaceProject =
 	                workspace.getRoot().getProject(description.getName());
 	
 	        if (!workspaceProject.exists())
@@ -468,9 +470,22 @@ public class Importer
 	        }
 	        // Send an event to the server indicating that a starter project
 	        // has been downloaded.
-			SensorBaseClient.getInstance().downloadStarterProjectHappened(
-			    workspaceProject.getLocationURI().getPath(),
-			    description.getName());
+			TimerTask downloadHappenedTask = new TimerTask() {
+				
+				@Override
+				public void run() {
+					try {
+						SensorBaseClient.getInstance().downloadStarterProjectHappened(
+							    workspaceProject.getLocationURI().getPath(),
+							    description.getName());
+					} catch (SensorBaseClientException e) {
+						errors.add(new ImportError(project, e.getMessage()));
+						Activator.getDefault().log(e);
+					}
+				}
+			};
+			
+			EclipseSensor.getInstance().scheduleOneTimeTask(downloadHappenedTask);
 			
 	        tempFile.delete();
     	}

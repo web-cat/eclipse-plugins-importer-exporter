@@ -721,7 +721,7 @@ public class SensorBaseClient
 		};
 		
 		try {
-			EclipseSensor.getInstance().schedulePluginExceptionReport(task);
+			EclipseSensor.getInstance().scheduleOneTimeTask(task);
 		} catch (SensorShellException e1) {
 			// Don't log to avoid indefinite loop
 		}
@@ -829,32 +829,44 @@ public class SensorBaseClient
 						.getString(IPreferencesConstants.STORED_USER_UUID);
 					if (!storedUserUuid.equals(""))
 					{
-						String requestString = "confirmUuid?userUuid ="
+						final String requestString = "confirmUuid?userUuid ="
 							+ storedUserUuid + "&email="
 							+ event.getNewValue();
-						Response response = makeRequest(Method.GET,
-							requestString, null);
-						if (response.getStatus().isSuccess())
-						{
-							String responseText = null;
-							try
-							{
-								responseText = response.getEntity().getText();
+						TimerTask confirmUUIDTask = new TimerTask() {
+							
+							@Override
+							public void run() {
+								Response response = makeRequest(Method.GET,
+										requestString, null);
+								if (response.getStatus().isSuccess())
+								{
+									String responseText = null;
+									try
+									{
+										responseText = response.getEntity().getText();
+									}
+									catch (IOException e)
+									{
+										Activator.getDefault().log(e);
+									}
+									if (responseText != null
+										&& responseText.contains("<uuid>"))
+									{
+										String uuidString = parseUUID(responseText);
+										Activator.getDefault()
+											.getPreferenceStore()
+											.setValue(
+											    IPreferencesConstants.STORED_USER_UUID,
+												uuidString);
+									}
+								}
 							}
-							catch (IOException e)
-							{
-								Activator.getDefault().log(e);
-							}
-							if (responseText != null
-								&& responseText.contains("<uuid>"))
-							{
-								String uuidString = parseUUID(responseText);
-								Activator.getDefault()
-									.getPreferenceStore()
-									.setValue(
-									    IPreferencesConstants.STORED_USER_UUID,
-										uuidString);
-							}
+						};
+						
+						try {
+							EclipseSensor.getInstance().scheduleOneTimeTask(confirmUUIDTask);
+						} catch (SensorShellException e) {
+							Activator.getDefault().log("Couldn't get EclipseSensor instance.", e);
 						}
 					}
 				}

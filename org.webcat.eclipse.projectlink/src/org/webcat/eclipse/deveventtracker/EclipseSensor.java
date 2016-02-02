@@ -532,12 +532,11 @@ public class EclipseSensor {
 	}
 	
 	/**
-	 * Schedules a one-time task of sending a plugin exception report to the
-	 * server.
-	 * @param exceptionReportTask
+	 * Schedules a one-time task of making a request to the server.
+	 * @param task The TimerTask to be scheduled.
 	 */
-	public void schedulePluginExceptionReport(TimerTask exceptionReportTask) {
-		this.timer.schedule(exceptionReportTask, 0);
+	public void scheduleOneTimeTask(TimerTask task) {
+		this.timer.schedule(task, 0);
 	}
 
 	/**
