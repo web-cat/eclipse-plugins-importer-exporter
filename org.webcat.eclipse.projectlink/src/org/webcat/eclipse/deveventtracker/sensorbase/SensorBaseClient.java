@@ -360,9 +360,10 @@ public class SensorBaseClient
 	 * @throws SensorBaseClientException
 	 *             If problems occur posting this data.
 	 */
-	public synchronized void putSensorDataBatch(SensorDatas batch)
+	public synchronized SensorDatas putSensorDataBatch(SensorDatas batch)
 			throws SensorBaseClientException
 	{
+		SensorDatas unsent = new SensorDatas();
 		if (getPushToServer())
 		{
 			// Retrieve the stored user UUID from preferences, or from the
@@ -372,10 +373,15 @@ public class SensorBaseClient
 
 			for (SensorData data : batch.sensorData)
 			{
-				String studentProjectUuid = retrieveStudentProject(
-						data.getProjectUri()).toString();
+				UUID studentProjectUuid = retrieveStudentProject(
+						data.getProjectUri());
+				
+				if (studentProjectUuid == null) {
+					unsent.getSensorData().add(data);
+					continue;
+				}
 				String requestString = "postSensorData?studentProjectUuid="
-						+ studentProjectUuid + "&userUuid=" + userUuid
+						+ studentProjectUuid.toString() + "&userUuid=" + userUuid
 						+ "&time=" + data.timestamp + "&runtime="
 						+ data.runtime + "&tool=" + data.tool
 						+ "&sensorDataType=" + data.sensorDataType + "&uri="
@@ -400,6 +406,8 @@ public class SensorBaseClient
 				}
 			}
 		}
+		
+		return unsent;
 	}
 
 	/**

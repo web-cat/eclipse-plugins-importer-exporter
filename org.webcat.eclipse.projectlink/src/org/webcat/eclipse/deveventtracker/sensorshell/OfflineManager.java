@@ -51,6 +51,8 @@ public class OfflineManager {
 	/** Whether or not data has been stored offline. */
 	boolean hasOfflineData = false;
 	
+	private volatile SensorDatas unsentData;
+	
 	private LinkedBlockingQueue<SensorData> blockingQueue;
 
 	/**
@@ -66,6 +68,7 @@ public class OfflineManager {
 		this.properties = shell.getProperties();
 		this.tool = tool;
 		this.offlineDir = new File(ResourcesPlugin.getWorkspace().getRoot().getLocationURI().getPath(), "/deveventtracker/offline/");
+		this.unsentData = new SensorDatas();
 		this.blockingQueue = new LinkedBlockingQueue<SensorData>();
 		boolean dirOk = this.offlineDir.mkdirs();
 		if (!dirOk && !this.offlineDir.exists()) {
@@ -83,6 +86,13 @@ public class OfflineManager {
 	 *            The SensorDatas instance to be stored.
 	 */
 	public void store(SensorDatas sensorDatas) {
+		
+		if (!this.unsentData.getSensorData().isEmpty()) {
+			synchronized (this) {
+				sensorDatas.getSensorData().addAll(this.unsentData.getSensorData());
+				this.unsentData.getSensorData().clear();
+			} 
+		}
 		if (sensorDatas.getSensorData().size() > 0) {
 			
 			for (SensorData current : sensorDatas.getSensorData()) {
@@ -210,8 +220,13 @@ public class OfflineManager {
 			SensorDatas sensorDatas = makeSensorDatasFromFile(postData);
 			shell.println("Found " + sensorDatas.getSensorData().size()
 					+ " instances.");
-			SensorBaseClient.getInstance().putSensorDataBatch(sensorDatas);
-			int numSent = sensorDatas.getSensorData().size();
+			SensorDatas unsent = SensorBaseClient.getInstance().putSensorDataBatch(sensorDatas);
+			if (!unsent.getSensorData().isEmpty()) {
+				synchronized (this) {
+					this.unsentData.getSensorData().addAll(unsent.getSensorData());
+				} 
+			}
+			int numSent = sensorDatas.getSensorData().size() - unsent.getSensorData().size();
 			shell.println("Successfully sent: " + numSent + " instances.");
 			fileStream.close();
 				boolean isDeleted = postData.delete();
