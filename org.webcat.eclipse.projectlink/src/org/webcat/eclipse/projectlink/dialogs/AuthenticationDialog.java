@@ -22,6 +22,7 @@ package org.webcat.eclipse.projectlink.dialogs;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
@@ -63,7 +64,6 @@ public class AuthenticationDialog extends TitleAreaDialog
 	public AuthenticationDialog(Shell parentShell)
 	{
 		super(parentShell);
-		parentShell.setMinimumSize(getInitialSize());
 	}
 
 
@@ -88,7 +88,11 @@ public class AuthenticationDialog extends TitleAreaDialog
 		setTitle(Messages.AuthenticationDialog_Title);
 		setMessage(Messages.AuthenticationDialog_Message);
 
-        Composite area = (Composite) super.createDialogArea(parent);
+		GC gc = new GC(getShell());
+		final int charWidth = gc.getFontMetrics().getAverageCharWidth();
+		gc.dispose();
+
+		Composite area = (Composite) super.createDialogArea(parent);
         Composite container = new Composite(area, SWT.NONE);
 		GridLayout gl_container = new GridLayout(2, false);
 		gl_container.horizontalSpacing = 15;
@@ -102,21 +106,25 @@ public class AuthenticationDialog extends TitleAreaDialog
 		lblUsername.setText(Messages.AuthenticationDialog_Username);
 
 		username = new Text(container, SWT.BORDER);
-		GridData gd_username = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_username.widthHint = 200;
+		GridData gd_username =
+		    new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
+		gd_username.widthHint = charWidth * 20;
 		username.setLayoutData(gd_username);
 
 		Label lblPassword = new Label(container, SWT.NONE);
 		lblPassword.setText(Messages.AuthenticationDialog_Password);
 
 		password = new Text(container, SWT.BORDER | SWT.PASSWORD);
-		GridData gd_password = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_password.widthHint = 200;
+		GridData gd_password =
+		    new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
+		gd_password.widthHint = charWidth * 20;
 		password.setLayoutData(gd_password);
 
 		rememberPassword = new Button(container, SWT.CHECK);
-		rememberPassword.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
-		rememberPassword.setText(Messages.AuthenticationDialog_Remember_Password);
+		rememberPassword.setLayoutData(
+		    new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
+		rememberPassword.setText(
+		    Messages.AuthenticationDialog_Remember_Password);
 
 		setText(username, Activator.getDefault().getStoredUsername());
 		setText(password, Activator.getDefault().getLastEnteredPassword());
@@ -149,17 +157,6 @@ public class AuthenticationDialog extends TitleAreaDialog
 
 
 	// ----------------------------------------------------------
-	/**
-	 * Return the initial size of the dialog.
-	 */
-	@Override
-	protected Point getInitialSize()
-	{
-		return new Point(482, 246);
-	}
-
-
-	// ----------------------------------------------------------
 	@Override
 	protected void okPressed()
 	{
@@ -169,5 +166,13 @@ public class AuthenticationDialog extends TitleAreaDialog
 		
 
 		super.okPressed();
+    }
+
+
+    // ----------------------------------------------------------
+    @Override
+    protected boolean isResizable()
+    {
+        return true;
 	}
 }
