@@ -121,27 +121,44 @@ public class OfflineManager {
 		offlineThread.start();
 	}
 	
-	private void writeOffline() {
+	private void writeOffline()
+	{
 		File offline = new File(this.offlineDir, OFFLINE_DATA_FILE);
 		BufferedWriter writer = null;
-		try {
-			while (true) {
-				FileWriter fw = new FileWriter(offline, true);
-				writer = new BufferedWriter(fw);
+		try
+		{
+			while (true)
+			{
 				SensorData data = this.blockingQueue.poll(2, TimeUnit.SECONDS);
-				if (data != null) {
-					this.parentShell.println(Thread.currentThread().getName() + ": Got data, writing to file.");
+				if (data != null)
+				{
+	                if (writer == null)
+	                {
+	                    writer = new BufferedWriter(
+	                        new FileWriter(offline, true));
+	                }
+					this.parentShell.println(Thread.currentThread().getName()
+					    + ": Got data, writing to file.");
 					writer.write(data.getFileString());
+	                writer.flush();
 				}
 				
-				writer.flush();
-				
-				if (EclipseSensor.FILE_REQUESTED) {
-					this.parentShell.println(Thread.currentThread().getName() + ": File requested. Releasing "
-							+ "semaphore.");
-					writer.close();
-					offline.renameTo(new File(this.offlineDir, POST_DATA_FILE));
-					EclipseSensor.getInstance().releaseSemaphore();
+				if (EclipseSensor.FILE_REQUESTED)
+				{
+				    if (writer != null)
+				    {
+				        writer.close();
+				        writer = null;
+				    }
+				    if (offline.exists())
+				    {
+				        offline.renameTo(
+				            new File(this.offlineDir, POST_DATA_FILE));
+				        this.parentShell.println(
+				            Thread.currentThread().getName()
+                            + ": File requested. Releasing semaphore.");
+				        EclipseSensor.getInstance().releaseSemaphore();
+				    }
 				}
 			}
 		} catch (Exception e) {
