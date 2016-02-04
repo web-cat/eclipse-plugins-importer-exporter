@@ -33,7 +33,7 @@ public class SingleSensorShell implements Shell {
 	 * Indicates if SensorShell is running interactively and thus output should
 	 * be printed.
 	 */
-	private boolean isInteractive = false;
+	private boolean isInteractive = true;
 
 	/** The notification shell prompt string. */
 	private String prompt = ">> ";
@@ -148,11 +148,11 @@ public class SingleSensorShell implements Shell {
 
 		// attempts to recover data if enabled; logs appropriate message in any
 		// case.
-		try {
-			recoverOfflineData();
-		} catch (SensorShellException e) {
-			Activator.getDefault().log("Error recovering offline data", e);
-		}
+//		try {
+//			recoverOfflineData();
+//		} catch (SensorShellException e) {
+//			Activator.getDefault().log("Error recovering offline data", e);
+//		}
 	}
 
 	/**
@@ -171,7 +171,7 @@ public class SingleSensorShell implements Shell {
 	 * @throws SensorShellException
 	 *             If problems occur recovering the data.
 	 */
-	private void recoverOfflineData() throws SensorShellException {
+	public void recoverOfflineData() throws SensorShellException {
 		// Return immediately if server is not available.
 		boolean isOfflineRecoveryEnabled = this.sensorProperties
 				.isOfflineRecoveryEnabled();

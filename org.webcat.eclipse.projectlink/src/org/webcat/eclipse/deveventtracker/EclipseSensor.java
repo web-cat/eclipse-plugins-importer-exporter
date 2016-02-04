@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Semaphore;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -86,7 +87,30 @@ public class EclipseSensor {
 	/** A singleton instance. */
 	private static EclipseSensor theInstance;
 	
+	/**
+	 * A boolean flag that keeps track of whether a file open
+	 * event comes directly after an import or not.
+	 */
 	public static String IMPORT = "true";
+	
+	/**
+	 * Volatile boolean flag to keep track of whether a post to the server
+	 * is currently happening.
+	 */
+	public static volatile boolean POST_HAPPENING = false;
+	
+	/**
+	 * Volatile boolean flag to check whether the shared offlineData.data file
+	 * has been requested by the server posting task.
+	 */
+	public static volatile boolean FILE_REQUESTED = false;
+	
+	/**
+	 * Ensures that only one of two background tasks (writing offline data, or 
+	 * posting data to the server) can access the file offlineData.data at a time.
+	 * Starts off with 0 available permits.
+	 */
+	private Semaphore fileReady;
 
 	/**
 	 * The number of seconds of the state change after which timer will wake up
@@ -99,6 +123,11 @@ public class EclipseSensor {
 	 * up again.
 	 */
 	private long timeBuffTransInterval = 5;
+	
+	/**
+	 * The interval at which to periodically try to post data to the server.
+	 */
+	private long timerPostToServerInterval = 60;
 
 	/**
 	 * The ITextEdtior instance to hold the active editor's (file's)
@@ -154,6 +183,11 @@ public class EclipseSensor {
 	 * timer wakes up.
 	 */
 	private TimerTask buffTransTimerTask;
+	
+	/**
+	 * The TimerTask instance to do the task of posting sensor data to the server.
+	 */
+	private TimerTask postToServerTimerTask;
 
 	/**
 	 * The WindowListerAdapter instance to check if this instance is added or
@@ -182,9 +216,11 @@ public class EclipseSensor {
 	 *             If error in getting sensorshell.
 	 */
 	private EclipseSensor() throws SensorShellException {
-		this.timer = new Timer();
+		this.timer = new Timer("TimerThread");
 		this.stateChangeTimerTask = new StateChangeTimerTask();
 		this.buffTransTimerTask = new BuffTransTimertask();
+		this.postToServerTimerTask = new PostToServerTimerTask();
+		this.fileReady = new Semaphore(0);
 
 		// Load sensor's setting.
 		this.sensorShellWrapper = new SensorShellWrapper(
@@ -245,7 +281,13 @@ public class EclipseSensor {
 					this.timeBuffTransInterval * 1000,
 					this.timeBuffTransInterval * 1000);
 		}
-
+		
+		if (this.postToServerTimerTask.scheduledExecutionTime() == 0) {
+			this.timer.schedule(this.postToServerTimerTask, 
+					this.timerPostToServerInterval * 1000, 
+					this.timerPostToServerInterval * 1000);
+		}
+		
 		registerListeners();
 	}
 
@@ -331,6 +373,13 @@ public class EclipseSensor {
 		// Creates instance to handle build error.
 		this.buildErrorSensor = new BuildErrorSensor(this);
 	}
+	
+	/**
+	 * Releases the semaphore controlling access to the offline data store.
+	 */
+	public void releaseSemaphore() {
+		this.fileReady.release();
+	}
 
 	/**
 	 * Processes development events that occur within the Eclipse browser. The
@@ -402,6 +451,20 @@ public class EclipseSensor {
 	/** Class name to file URI map. */
 	private Map<String, URI> class2FileMap = new HashMap<String, URI>();
 
+	public void processOfflineRecovery() {
+		FILE_REQUESTED = true;
+		try {
+			this.fileReady.acquire();
+			FILE_REQUESTED = false;
+			this.sensorShellWrapper.getShell().recoverOfflineData();
+		} catch (SensorShellException e) {
+			Activator.getDefault().log("Error recovering offline data", e);
+		} catch (InterruptedException e) {
+			Activator.getDefault().log("The thread was interrupted before it could"
+					+ " acquire permission to modify the file.", e);
+		}
+	}
+	
 	/**
 	 * Process the state change activity whose element consists of the
 	 * (absolute) file name and its buffer size (or file size).
@@ -466,6 +529,14 @@ public class EclipseSensor {
 			this.latestStateChangeFile = fileResource;
 			this.latestStateChangeFileSize = activeBufferSize;
 		}
+	}
+	
+	/**
+	 * Schedules a one-time task of making a request to the server.
+	 * @param task The TimerTask to be scheduled.
+	 */
+	public void scheduleOneTimeTask(TimerTask task) {
+		this.timer.schedule(task, 0);
 	}
 
 	/**
@@ -1175,7 +1246,7 @@ public class EclipseSensor {
 						.endsWith(EclipseSensorConstants.JAVA_EXT)) {
 					IFile file = (IFile) resource;
 
-					Map<String, String> keyValueMap = new HashMap<String, String>();
+					final Map<String, String> keyValueMap = new HashMap<String, String>();
 
 					keyValueMap.put("Language", "java");
 					keyValueMap.put(EclipseSensorConstants.UNIT_TYPE,
@@ -1214,8 +1285,8 @@ public class EclipseSensor {
 								testAssertionCount);
 					}
 
-					URI fileResource = file.getLocationURI();
-					URI projectURI = file.getProject().getLocationURI();
+					final URI fileResource = file.getLocationURI();
+					final URI projectURI = file.getProject().getLocationURI();
 					
 					if (file.getName().contains("test") || file.getName().contains("Test")) {
 						keyValueMap.put("TestCodeEdit", "true");
@@ -1223,23 +1294,32 @@ public class EclipseSensor {
 						keyValueMap.put("TestCodeEdit", "false");
 					}
 
-					StringBuffer message = new StringBuffer("Save File");
+					final StringBuffer message = new StringBuffer("Save File");
 					message.append(" : ").append(
 							EclipseSensor.this.extractFileName(fileResource));
 
 					keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Save");
-					String commitMessage = "File " + fileResource.getPath()
+					final String commitMessage = "File " + fileResource.getPath()
 							+ " changed at "
 							+ new Date(System.currentTimeMillis());
-					ObjectId hash = EclipseSensor.this.commitSnapshot(
-							projectURI.getPath(), commitMessage);
-					if (hash != null) {
-						keyValueMap.put("CommitHash", hash.getName());
-					}
-					EclipseSensor.this.addDevEvent(
-							EclipseSensorConstants.DEVEVENT_EDIT, projectURI,
-							fileResource, keyValueMap, message.toString());
-
+					
+					TimerTask saveTask = new TimerTask() {
+						
+						@Override
+						public void run() {
+							ObjectId hash = EclipseSensor.this.commitSnapshot(
+									projectURI.getPath(), commitMessage);
+							if (hash != null) {
+								keyValueMap.put("CommitHash", hash.getName());
+							}
+							
+							EclipseSensor.this.addDevEvent(
+									EclipseSensorConstants.DEVEVENT_EDIT, projectURI,
+									fileResource, keyValueMap, message.toString());
+						}
+					};
+					
+					EclipseSensor.this.timer.schedule(saveTask, 0);
 				}
 
 				// Visit the children because it is not necessary for the saving

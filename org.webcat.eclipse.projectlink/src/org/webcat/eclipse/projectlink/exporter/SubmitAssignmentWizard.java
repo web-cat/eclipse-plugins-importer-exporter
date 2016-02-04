@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.TimerTask;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IAdaptable;
@@ -30,11 +31,12 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.jgit.submodule.SubmoduleWalk.IgnoreSubmoduleMode;
 import org.eclipse.ui.IExportWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
+import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClientException;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.dialogs.AuthenticationDialog;
 import org.webcat.eclipse.projectlink.dialogs.ExceptionDialog;
@@ -139,9 +141,21 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 		{
 			submitter.submit(manifest);
 			
-			// Send an event to the server summarizing this submission.
-			SensorBaseClient.getInstance().submissionHappened(
-                submitPage.getProject());
+			TimerTask submissionHappenedTask = new TimerTask() {
+				
+				@Override
+				public void run() {
+					// Send an event to the server summarizing this submission.
+					try {
+						SensorBaseClient.getInstance().submissionHappened(
+						    submitPage.getProject());
+					} catch (SensorBaseClientException e) {
+						new  ExceptionDialog(getContainer().getShell(), e, true).open();
+					}
+				}
+			};
+			
+			EclipseSensor.getInstance().scheduleOneTimeTask(submissionHappenedTask);
 			
 			if (submitter.hasResponse())
 			{

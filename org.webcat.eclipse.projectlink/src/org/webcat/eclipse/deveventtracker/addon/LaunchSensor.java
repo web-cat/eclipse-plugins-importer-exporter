@@ -19,7 +19,7 @@ import org.webcat.eclipse.deveventtracker.EclipseSensor;
 /**
  * Detects program and test launches and adds dev events accordingly.
  * 
- * @author ayaan
+ * @author Ayaan Kazerouni
  * @version 1/12/2016
  */
 public class LaunchSensor implements ILaunchListener {

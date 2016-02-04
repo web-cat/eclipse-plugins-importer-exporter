@@ -12,6 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import org.eclipse.core.resources.IProject;
@@ -34,6 +35,8 @@ import org.restlet.data.Protocol;
 import org.restlet.data.Reference;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
+import org.webcat.eclipse.deveventtracker.EclipseSensor;
+import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.projectlink.Activator;
 import org.webcat.eclipse.projectlink.preferences.IPreferencesConstants;
 
@@ -357,9 +360,10 @@ public class SensorBaseClient
 	 * @throws SensorBaseClientException
 	 *             If problems occur posting this data.
 	 */
-	public synchronized void putSensorDataBatch(SensorDatas batch)
+	public synchronized SensorDatas putSensorDataBatch(SensorDatas batch)
 			throws SensorBaseClientException
 	{
+		SensorDatas unsent = new SensorDatas();
 		if (getPushToServer())
 		{
 			// Retrieve the stored user UUID from preferences, or from the
@@ -369,10 +373,15 @@ public class SensorBaseClient
 
 			for (SensorData data : batch.sensorData)
 			{
-				String studentProjectUuid = retrieveStudentProject(
-						data.getProjectUri()).toString();
+				UUID studentProjectUuid = retrieveStudentProject(
+						data.getProjectUri());
+				
+				if (studentProjectUuid == null) {
+					unsent.getSensorData().add(data);
+					continue;
+				}
 				String requestString = "postSensorData?studentProjectUuid="
-						+ studentProjectUuid + "&userUuid=" + userUuid
+						+ studentProjectUuid.toString() + "&userUuid=" + userUuid
 						+ "&time=" + data.timestamp + "&runtime="
 						+ data.runtime + "&tool=" + data.tool
 						+ "&sensorDataType=" + data.sensorDataType + "&uri="
@@ -397,6 +406,8 @@ public class SensorBaseClient
 				}
 			}
 		}
+		
+		return unsent;
 	}
 
 	/**
@@ -421,6 +432,7 @@ public class SensorBaseClient
 		request.getClientInfo().getAcceptedMediaTypes().add(htmlMedia);
 		if (this.isTraceEnabled)
 		{
+			System.out.println(Thread.currentThread().getName());
 			System.out.println(
                 "SensorBaseClient Tracing: " + method + " " + reference);
 			if (entity != null)
@@ -679,35 +691,47 @@ public class SensorBaseClient
 	 * @param e
 	 *            The exception to log.
 	 */
-	public void pluginExceptionHappened(Exception e)
+	public void pluginExceptionHappened(final Exception e)
 	{
-		try
-		{
-			UUID userUuid = retrieveUser(getEmail());
-			String exceptionClass = e.getClass().getCanonicalName();
-			String exceptionMessage = e.getMessage();
+		TimerTask task = new TimerTask() {
+			
+			@Override
+			public void run() {
+				try
+				{
+					UUID userUuid = retrieveUser(getEmail());
+					String exceptionClass = e.getClass().getCanonicalName();
+					String exceptionMessage = e.getMessage();
 
-			StackTraceElement topStackElement = e.getStackTrace()[0];
-			String className = topStackElement.getClassName();
-			String methodName = topStackElement.getMethodName();
-			String fileName = topStackElement.getFileName();
-			int lineNumber = topStackElement.getLineNumber();
+					StackTraceElement topStackElement = e.getStackTrace()[0];
+					String className = topStackElement.getClassName();
+					String methodName = topStackElement.getMethodName();
+					String fileName = topStackElement.getFileName();
+					int lineNumber = topStackElement.getLineNumber();
 
-			StringWriter errors = new StringWriter();
-			e.printStackTrace(new PrintWriter(errors));
-			String stackTrace = errors.toString();
+					StringWriter errors = new StringWriter();
+					e.printStackTrace(new PrintWriter(errors));
+					String stackTrace = errors.toString();
 
-			String requestString = "pluginExceptionHappened" + "?userUuid="
-				+ userUuid + "&exceptionClass=" + exceptionClass
-				+ "&exceptionMessage=" + exceptionMessage + "&className="
-				+ className + "&methodName=" + methodName + "&fileName="
-				+ fileName + "&lineNumber=" + lineNumber + "&stackTrace="
-				+ stackTrace;
-			makeRequest(Method.GET, requestString, null);
-		}
-		catch (SensorBaseClientException e1)
-		{
-			// Don't want to loop infinitely, so don't log this exception.
+					String requestString = "pluginExceptionHappened" + "?userUuid="
+						+ userUuid + "&exceptionClass=" + exceptionClass
+						+ "&exceptionMessage=" + exceptionMessage + "&className="
+						+ className + "&methodName=" + methodName + "&fileName="
+						+ fileName + "&lineNumber=" + lineNumber + "&stackTrace="
+						+ stackTrace;
+					makeRequest(Method.GET, requestString, null);
+				}
+				catch (SensorBaseClientException e1)
+				{
+					// Don't want to loop infinitely, so don't log this exception.
+				}
+			}
+		};
+		
+		try {
+			EclipseSensor.getInstance().scheduleOneTimeTask(task);
+		} catch (SensorShellException e1) {
+			// Don't log to avoid indefinite loop
 		}
 	}
 
@@ -813,32 +837,44 @@ public class SensorBaseClient
 						.getString(IPreferencesConstants.STORED_USER_UUID);
 					if (!storedUserUuid.equals(""))
 					{
-						String requestString = "confirmUuid?userUuid ="
+						final String requestString = "confirmUuid?userUuid ="
 							+ storedUserUuid + "&email="
 							+ event.getNewValue();
-						Response response = makeRequest(Method.GET,
-							requestString, null);
-						if (response.getStatus().isSuccess())
-						{
-							String responseText = null;
-							try
-							{
-								responseText = response.getEntity().getText();
+						TimerTask confirmUUIDTask = new TimerTask() {
+							
+							@Override
+							public void run() {
+								Response response = makeRequest(Method.GET,
+										requestString, null);
+								if (response.getStatus().isSuccess())
+								{
+									String responseText = null;
+									try
+									{
+										responseText = response.getEntity().getText();
+									}
+									catch (IOException e)
+									{
+										Activator.getDefault().log(e);
+									}
+									if (responseText != null
+										&& responseText.contains("<uuid>"))
+									{
+										String uuidString = parseUUID(responseText);
+										Activator.getDefault()
+											.getPreferenceStore()
+											.setValue(
+											    IPreferencesConstants.STORED_USER_UUID,
+												uuidString);
+									}
+								}
 							}
-							catch (IOException e)
-							{
-								Activator.getDefault().log(e);
-							}
-							if (responseText != null
-								&& responseText.contains("<uuid>"))
-							{
-								String uuidString = parseUUID(responseText);
-								Activator.getDefault()
-									.getPreferenceStore()
-									.setValue(
-									    IPreferencesConstants.STORED_USER_UUID,
-										uuidString);
-							}
+						};
+						
+						try {
+							EclipseSensor.getInstance().scheduleOneTimeTask(confirmUUIDTask);
+						} catch (SensorShellException e) {
+							Activator.getDefault().log("Couldn't get EclipseSensor instance.", e);
 						}
 					}
 				}

@@ -5,7 +5,6 @@ import java.util.Map;
 import org.webcat.eclipse.deveventtracker.sensorbase.Properties;
 import org.webcat.eclipse.deveventtracker.sensorbase.Property;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
-import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClientException;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorData;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorDatas;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
@@ -48,66 +47,27 @@ public class SensorDataCommand extends Command {
 	}
 
 	/**
-	 * Sends accumulated data, including offline and current data from the
-	 * AddCommand. If server not pingable, then the offline data is saved for a
-	 * later attempt.
+	 * Sends accumulated data. This process includes adding the
+	 * SensorDatas to a blocking queue, that is polled for data
+	 * to send to the server.
 	 * 
 	 * @return The number of sensor data instances that were sent.
 	 * @throws SensorShellException
 	 *             If problems occur sending the data.
 	 */
 	public int send() throws SensorShellException {
-		int numDataSent = 0;
-
 		// Return right away if there is no data to send
 		if (sensorDatas.getSensorData().isEmpty()) {
 			return 0;
 		}
-		// Indicate we're sending if in interactive mode.
-		if (!this.shell.isInteractive()) {
-		}
 
-		// Do a ping to see that we can connect to the server.
-		if (SensorBaseClient.getInstance().isPingable()) {
-			// We can connect, and there is data, so attempt to send.
-			try {
-				this.shell.println("Attempting to send "
-						+ sensorDatas.getSensorData().size()
-						+ " sensor data instances. Available memory (bytes): "
-						+ getAvailableMemory());
-				// long startTime = new Date().getTime();
-				SensorBaseClient.getInstance().putSensorDataBatch(sensorDatas);
-				// this.shell.println("Successful send to " +
-				// this.properties.getSensorBaseHost() +
-				// " Elapsed time: " + (new Date().getTime() - startTime) +
-				// " ms.");
-				numDataSent = sensorDatas.getSensorData().size();
-				totalSent += numDataSent;
-				this.sensorDatas.getSensorData().clear();
-				return numDataSent;
-			} catch (SensorBaseClientException e) {
-				this.shell.println("Error sending data: " + e);
-				this.sensorDatas.getSensorData().clear();
-				Activator.getDefault().log("Could not send data", e);
-				throw new SensorShellException(
-						"Could not send data: error in SensorBaseClient", e);
-			}
-		}
-
-		// If we got here, then the server was not available.
-		if (this.properties.isOfflineCacheEnabled()) {
-			this.shell.println("Server "
-					+ SensorBaseClient.getInstance().getHost()
-					+ " not available." + " Storing sensor data offline.");
-			this.shell.getOfflineManager().store(this.sensorDatas);
-			this.sensorDatas.getSensorData().clear();
-			return 0;
-		} else {
-			String msg = "Server not available and offline storage disabled. Sensor Data lost.";
-			this.shell.println(msg);
-			this.sensorDatas.getSensorData().clear();
-			throw new SensorShellException(msg);
-		}
+		this.shell.println("Server "
+				+ SensorBaseClient.getInstance().getHost()
+				+ " not available." + " Storing sensor data offline.");
+		this.shell.getOfflineManager().store(this.sensorDatas);
+		int numSent = this.sensorDatas.getSensorData().size();
+		this.sensorDatas.getSensorData().clear();
+		return numSent;
 	}
 
 	/**

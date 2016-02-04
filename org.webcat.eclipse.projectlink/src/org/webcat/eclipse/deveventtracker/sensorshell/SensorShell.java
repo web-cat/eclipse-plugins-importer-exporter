@@ -82,6 +82,12 @@ public class SensorShell implements Shell {
     }
   }
   
+  public void recoverOfflineData() throws SensorShellException {
+	  if (this.shell instanceof SingleSensorShell) {
+		  ((SingleSensorShell) this.shell).recoverOfflineData();
+	  }
+  }
+  
   /** {@inheritDoc} */
   public void add(Map<String, String> keyValMap) throws SensorShellException {
     this.shell.add(keyValMap);
