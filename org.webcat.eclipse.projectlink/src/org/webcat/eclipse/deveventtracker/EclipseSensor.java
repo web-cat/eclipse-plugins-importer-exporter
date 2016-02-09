@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
 import org.eclipse.core.resources.IFile;
@@ -25,6 +26,7 @@ import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -62,6 +64,7 @@ import org.webcat.eclipse.deveventtracker.addon.JavaStatementMeter;
 import org.webcat.eclipse.deveventtracker.addon.JavaStructureChangeDetector;
 import org.webcat.eclipse.deveventtracker.addon.LaunchSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
+import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClientException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
@@ -1354,30 +1357,36 @@ public class EclipseSensor {
 		// Here, we check to see if we have a local repository already.
 		// Otherwise, we need to create one.
 		if (projectUri != null) {
-			File localRepoDir = new File(projectUri);
-			if (!localRepoDir.isDirectory()) {
-				localRepoDir.mkdirs();
-			}
-			// If the directory exists, we need to pull form the server before
-			// we push.
-			boolean needsPull = !(new File(projectUri, "/.git").isDirectory());
-			// If we have a .needspull file, also pass true for needsPull and
-			// delete the file.
-			if (!needsPull) {
-				File needsPullFile = new File(projectUri, "/.needspull");
-				if (needsPullFile.exists()) {
-					needsPull = true;
-					needsPullFile.delete();
-				}
-			}
 			try {
+				UUID projectUuid = SensorBaseClient.getInstance().retrieveStudentProject(projectUri);
+				if (projectUuid == null) {
+					throw new IllegalArgumentException("Project should have a uuid");
+				}
+				IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+				File localRepoDir = new File(root.getLocationURI().getPath(), "/.metadata/." + projectUuid.toString());
+				if (!localRepoDir.isDirectory()) {
+					System.out.println(localRepoDir.getPath());
+					localRepoDir.mkdirs();
+				}
+				// If the directory exists, we need to pull form the server before
+				// we push.
+				boolean needsPull = !(new File(localRepoDir, "/.git").isDirectory());
+				// If we have a .needspull file, also pass true for needsPull and
+				// delete the file.
+				if (!needsPull) {
+					File needsPullFile = new File(projectUri, "/.needspull");
+					if (needsPullFile.exists()) {
+						needsPull = true;
+						needsPullFile.delete();
+					}
+				}
 				Git git = Git.init().setDirectory(localRepoDir).call();
 
 				// Create default .gitignore file if it doesn't already exist
-				GitIgnoreUtils.writeToGitIgnore(projectUri);
+				GitIgnoreUtils.writeToGitIgnore(localRepoDir.getPath());
 
 				// Add all files in the project directory
-				git.add().addFilepattern(".").call();
+				git.add().addFilepattern(projectUri + "/.").call();
 
 				// Actual commit
 				RevCommit commit = SensorBaseClient.getInstance()
@@ -1390,6 +1399,9 @@ public class EclipseSensor {
 				Activator.getDefault().log(e);
 			} catch (GitAPIException e) {
 				Activator.getDefault().log(e);
+			} catch (SensorBaseClientException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		return null;
