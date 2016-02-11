@@ -1291,7 +1291,6 @@ public class EclipseSensor {
 
 					final URI fileResource = file.getLocationURI();
 					final URI projectURI = file.getProject().getLocationURI();
-					final String projectName = file.getProject().getName();
 					
 					if (file.getName().contains("test") || file.getName().contains("Test")) {
 						keyValueMap.put("TestCodeEdit", "true");
@@ -1365,13 +1364,13 @@ public class EclipseSensor {
 					throw new IllegalArgumentException("Project should have a uuid");
 				}
 				IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-				File localRepoDir = new File(root.getLocationURI().getPath(), "/.metadata/." + projectUuid.toString());
+				File localRepoDir = new File(root.getLocationURI().getPath(), "/.metadata/.repos/." + projectUuid.toString());
 				if (!localRepoDir.isDirectory()) {
 					localRepoDir.mkdirs();
 				}
 				// If the directory exists, we need to pull form the server before
 				// we push.
-				boolean needsPull = !localRepoDir.isDirectory();
+				boolean needsPull = !(new File(localRepoDir, "/.git")).isDirectory();
 				// If we have a .needspull file, also pass true for needsPull and
 				// delete the file.
 				if (!needsPull) {
@@ -1381,7 +1380,28 @@ public class EclipseSensor {
 						needsPullFile.delete();
 					}
 				}
-				Git git = Git.init().setBare(false).setGitDir(localRepoDir).setDirectory(new File(projectUri)).call();
+				
+				Git git = null;
+				
+				// Open an existing repository, if it exists. If not, create a new one, specifying
+				// the separate git and work directories in git config.
+				if (new File(localRepoDir, "/.git").isDirectory()) {
+					try {
+						git = Git.open(new File(localRepoDir, "/.git"));
+					} catch (IOException e) {
+						Activator.getDefault().log(e);
+					}
+				} else {
+					git = Git.init().setBare(false).setGitDir(new File(localRepoDir, "/.git")).setDirectory(new File(projectUri)).call();
+					
+					// Get rid of the .git file (not directory) that points to the 
+					// --git-dir, so that students are free to create their own git 
+					// repository without interference.
+					File gitFile = new File(projectUri + "/.git");
+					if (gitFile.isFile()) {
+						gitFile.delete();
+					}
+				}
 
 				// Create default .gitignore file if it doesn't already exist
 				GitIgnoreUtils.writeToGitIgnore(projectUri);
@@ -1401,8 +1421,7 @@ public class EclipseSensor {
 			} catch (GitAPIException e) {
 				Activator.getDefault().log(e);
 			} catch (SensorBaseClientException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Activator.getDefault().log(e);
 			}
 		}
 		return null;
