@@ -8,6 +8,7 @@ import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CUR
 import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_METHODS;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.Date;
@@ -1290,6 +1291,7 @@ public class EclipseSensor {
 
 					final URI fileResource = file.getLocationURI();
 					final URI projectURI = file.getProject().getLocationURI();
+					final String projectName = file.getProject().getName();
 					
 					if (file.getName().contains("test") || file.getName().contains("Test")) {
 						keyValueMap.put("TestCodeEdit", "true");
@@ -1365,12 +1367,11 @@ public class EclipseSensor {
 				IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 				File localRepoDir = new File(root.getLocationURI().getPath(), "/.metadata/." + projectUuid.toString());
 				if (!localRepoDir.isDirectory()) {
-					System.out.println(localRepoDir.getPath());
 					localRepoDir.mkdirs();
 				}
 				// If the directory exists, we need to pull form the server before
 				// we push.
-				boolean needsPull = !(new File(localRepoDir, "/.git").isDirectory());
+				boolean needsPull = !localRepoDir.isDirectory();
 				// If we have a .needspull file, also pass true for needsPull and
 				// delete the file.
 				if (!needsPull) {
@@ -1380,13 +1381,13 @@ public class EclipseSensor {
 						needsPullFile.delete();
 					}
 				}
-				Git git = Git.init().setDirectory(localRepoDir).call();
+				Git git = Git.init().setBare(false).setGitDir(localRepoDir).setDirectory(new File(projectUri)).call();
 
 				// Create default .gitignore file if it doesn't already exist
-				GitIgnoreUtils.writeToGitIgnore(localRepoDir.getPath());
+				GitIgnoreUtils.writeToGitIgnore(projectUri);
 
 				// Add all files in the project directory
-				git.add().addFilepattern(projectUri + "/.").call();
+				git.add().addFilepattern(".").call();
 
 				// Actual commit
 				RevCommit commit = SensorBaseClient.getInstance()
