@@ -67,7 +67,7 @@ public class OfflineManager {
 		this.parentShell = shell;
 		this.properties = shell.getProperties();
 		this.tool = tool;
-		this.offlineDir = new File(ResourcesPlugin.getWorkspace().getRoot().getLocationURI().getPath(), "/deveventtracker/offline/");
+		this.offlineDir = new File(ResourcesPlugin.getWorkspace().getRoot().getLocationURI().getPath(), "/.metadata/.deveventtracker/offline/");
 		this.unsentData = new SensorDatas();
 		this.blockingQueue = new LinkedBlockingQueue<SensorData>();
 		boolean dirOk = this.offlineDir.mkdirs();
