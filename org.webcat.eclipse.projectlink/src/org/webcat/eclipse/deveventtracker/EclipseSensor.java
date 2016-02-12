@@ -15,15 +15,13 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.math.BigInteger;
 import java.net.URI;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
 import org.eclipse.core.resources.IFile;
@@ -1377,22 +1375,13 @@ public class EclipseSensor {
 		}
 		
 		try {
-			MessageDigest md = MessageDigest.getInstance("MD5");
-			md.reset();
-			md.update(projectUri.getBytes());
-			byte[] digest = md.digest();
-			BigInteger bigInt = new BigInteger(1, digest);
-			String repoId = bigInt.toString(16);
-			try {
-				idFile.createNewFile();
-				BufferedWriter writer = new BufferedWriter(new FileWriter(idFile));
-				writer.write(repoId);
-				writer.close();
-			} catch (IOException e) {
-				Activator.getDefault().log(e);
-			}
+			String repoId = UUID.randomUUID().toString();
+			idFile.createNewFile();
+			BufferedWriter writer = new BufferedWriter(new FileWriter(idFile));
+			writer.write(repoId);
+			writer.close();
 			return repoId;
-		} catch (NoSuchAlgorithmException e) {
+		}catch (IOException e) {
 			Activator.getDefault().log(e);
 			return null;
 		}
@@ -1415,6 +1404,10 @@ public class EclipseSensor {
 		if (projectUri != null) {
 			try {
 				String repositoryId = this.getRepositoryID(projectUri);
+				if (repositoryId == null) {
+					return null;
+				}
+				
 				IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 				File localRepoDir = new File(root.getLocationURI().getPath(), "/.metadata/.repos/." + repositoryId);
 				if (!localRepoDir.isDirectory()) {
