@@ -7,16 +7,23 @@ import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CUR
 import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_ASSERTIONS;
 import static org.webcat.eclipse.deveventtracker.EclipseSensorConstants.PROP_CURRENT_TEST_METHODS;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
 import org.eclipse.core.resources.IFile;
@@ -65,7 +72,6 @@ import org.webcat.eclipse.deveventtracker.addon.JavaStatementMeter;
 import org.webcat.eclipse.deveventtracker.addon.JavaStructureChangeDetector;
 import org.webcat.eclipse.deveventtracker.addon.LaunchSensor;
 import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClient;
-import org.webcat.eclipse.deveventtracker.sensorbase.SensorBaseClientException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellException;
 import org.webcat.eclipse.deveventtracker.sensorshell.SensorShellProperties;
 import org.webcat.eclipse.projectlink.Activator;
@@ -1342,6 +1348,55 @@ public class EclipseSensor {
 		this.sensorShellWrapper.quit();
 		SensorBaseClient.getInstance().stopClient();
 	}
+	
+	/**
+	 * Checks if the file /.repo file exists. If it does, retrieves
+	 * an MD5 hash from the projectUri for the git-directory. If it
+	 * doesn't exist, generates the hash and creates the file with the
+	 * hash in it.
+	 * 
+	 * @param projectUri The project's URI
+	 * @return an MD5 hash as a String
+	 */
+	private String getRepositoryID(String projectUri) {
+		File idFile = new File(projectUri + "/.repo");
+		if (idFile.exists()) {
+			try {
+				BufferedReader reader = new BufferedReader(new FileReader(idFile));
+				String line = "";
+				line = reader.readLine();
+				reader.close();
+				if (line != null) {
+					return line;
+				}
+			} catch (FileNotFoundException e) {
+				Activator.getDefault().log(e);
+			} catch (IOException e) {
+				Activator.getDefault().log(e);
+			}
+		}
+		
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			md.reset();
+			md.update(projectUri.getBytes());
+			byte[] digest = md.digest();
+			BigInteger bigInt = new BigInteger(1, digest);
+			String repoId = bigInt.toString(16);
+			try {
+				idFile.createNewFile();
+				BufferedWriter writer = new BufferedWriter(new FileWriter(idFile));
+				writer.write(repoId);
+				writer.close();
+			} catch (IOException e) {
+				Activator.getDefault().log(e);
+			}
+			return repoId;
+		} catch (NoSuchAlgorithmException e) {
+			Activator.getDefault().log(e);
+			return null;
+		}
+	}
 
 	/**
 	 * Commits a snapshot (via the SensorBaseClient) of the given project with
@@ -1359,12 +1414,9 @@ public class EclipseSensor {
 		// Otherwise, we need to create one.
 		if (projectUri != null) {
 			try {
-				UUID projectUuid = SensorBaseClient.getInstance().retrieveStudentProject(projectUri);
-				if (projectUuid == null) {
-					throw new IllegalArgumentException("Project should have a uuid");
-				}
+				String repositoryId = this.getRepositoryID(projectUri);
 				IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-				File localRepoDir = new File(root.getLocationURI().getPath(), "/.metadata/.repos/." + projectUuid.toString());
+				File localRepoDir = new File(root.getLocationURI().getPath(), "/.metadata/.repos/." + repositoryId);
 				if (!localRepoDir.isDirectory()) {
 					localRepoDir.mkdirs();
 				}
@@ -1419,8 +1471,6 @@ public class EclipseSensor {
 			} catch (NoFilepatternException e) {
 				Activator.getDefault().log(e);
 			} catch (GitAPIException e) {
-				Activator.getDefault().log(e);
-			} catch (SensorBaseClientException e) {
 				Activator.getDefault().log(e);
 			}
 		}
