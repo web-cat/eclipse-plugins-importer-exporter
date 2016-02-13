@@ -191,13 +191,36 @@ public class OfflineManager {
 	 *             If problems occur sending the recovered data.
 	 */
 	public void recover() throws SensorShellException {
-		// Return immediately if there are no offline files to process.
+		// Process data from {workspace_root}/deveventracker/offline that may
+		// have been left over by the old version of the plugin.
+		File oldDataDir = new File(ResourcesPlugin.getWorkspace().getRoot().getLocationURI().getPath(), "/deveventtracker/offline/");
+		if (oldDataDir.isDirectory()) {
+			SensorDatas oldDatas = new SensorDatas();
+			
+			File[] contents = oldDataDir.listFiles();
+			for (File current : contents) {
+				oldDatas.getSensorData().addAll(this.makeSensorDatasFromFile(current).getSensorData());
+				current.delete();
+			}
+			
+			oldDataDir.delete();
+			new File(ResourcesPlugin.getWorkspace().getRoot().getLocationURI().getPath(), "/deveventtracker/").delete();
+			
+			if (!oldDatas.getSensorData().isEmpty()) {
+				synchronized(this) {
+					this.unsentData.getSensorData().addAll(oldDatas.getSensorData());
+				}
+			}
+		}
+		
+		// Return immediately if there is no offline file to process.
 		File postData = new File(this.offlineDir, POST_DATA_FILE);
 		
 		if (!postData.exists()) {
 			return;
 		}
 		
+		// Return if the server is not pingable. Will re-attempt later.
 		if (!SensorBaseClient.getInstance().isPingable()) {
 			return;
 		}
