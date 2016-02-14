@@ -470,6 +470,8 @@ public class EclipseSensor {
 		} catch (InterruptedException e) {
 			Activator.getDefault().log("The thread was interrupted before it could"
 					+ " acquire permission to modify the file.", e);
+		} catch (Exception e) {
+			Activator.getDefault().log(e);
 		}
 	}
 	
@@ -544,7 +546,11 @@ public class EclipseSensor {
 	 * @param task The TimerTask to be scheduled.
 	 */
 	public void scheduleOneTimeTask(TimerTask task) {
-		this.timer.schedule(task, 0);
+		try {
+			this.timer.schedule(task, 0);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
 	}
 
 	/**
