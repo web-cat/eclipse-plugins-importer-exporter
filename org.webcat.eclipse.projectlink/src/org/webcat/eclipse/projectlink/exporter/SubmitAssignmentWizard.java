@@ -151,6 +151,8 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 						    submitPage.getProject());
 					} catch (SensorBaseClientException e) {
 						new  ExceptionDialog(getContainer().getShell(), e, true).open();
+					} catch (Exception e) {
+						Activator.getDefault().log(e);
 					}
 				}
 			};

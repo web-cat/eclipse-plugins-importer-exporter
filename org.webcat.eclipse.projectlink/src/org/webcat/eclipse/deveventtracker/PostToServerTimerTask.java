@@ -25,6 +25,8 @@ public class PostToServerTimerTask extends TimerTask {
 	 * Attempts to recover offline data and sent it to the server.
 	 */
 	public void run() {
+		
+		// Wrap run in a catch-call to avoid Timer cancellations.
 		try {
 			if (!EclipseSensor.POST_HAPPENING) {
 				EclipseSensor.POST_HAPPENING = true;
@@ -33,6 +35,8 @@ public class PostToServerTimerTask extends TimerTask {
 			}
 		} catch (SensorShellException e) {
 			Activator.getDefault().log("Could't get EclipseSensor instance", e);
+		} catch (Exception e) {
+			Activator.getDefault().log(e);
 		}
 	}
 }

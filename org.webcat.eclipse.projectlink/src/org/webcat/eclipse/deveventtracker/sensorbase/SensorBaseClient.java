@@ -697,6 +697,8 @@ public class SensorBaseClient
 			
 			@Override
 			public void run() {
+				
+				// Wrap run in catch-all to avoid Timer cancellations.
 				try
 				{
 					UUID userUuid = retrieveUser(getEmail());
@@ -720,9 +722,7 @@ public class SensorBaseClient
 						+ fileName + "&lineNumber=" + lineNumber + "&stackTrace="
 						+ stackTrace;
 					makeRequest(Method.GET, requestString, null);
-				}
-				catch (SensorBaseClientException e1)
-				{
+				} catch (Exception e1) {
 					// Don't want to loop infinitely, so don't log this exception.
 				}
 			}
@@ -731,7 +731,7 @@ public class SensorBaseClient
 		try {
 			EclipseSensor.getInstance().scheduleOneTimeTask(task);
 		} catch (SensorShellException e1) {
-			// Don't log to avoid indefinite loop
+			System.out.println("Couldn't get EclipseSensor instance.");
 		}
 	}
 
@@ -844,29 +844,35 @@ public class SensorBaseClient
 							
 							@Override
 							public void run() {
-								Response response = makeRequest(Method.GET,
-										requestString, null);
-								if (response.getStatus().isSuccess())
-								{
-									String responseText = null;
-									try
+								
+								// Wrap run in catch-all to avoid Timer cancellations.
+								try {
+									Response response = makeRequest(Method.GET,
+											requestString, null);
+									if (response.getStatus().isSuccess())
 									{
-										responseText = response.getEntity().getText();
+										String responseText = null;
+										try
+										{
+											responseText = response.getEntity().getText();
+										}
+										catch (IOException e)
+										{
+											Activator.getDefault().log(e);
+										}
+										if (responseText != null
+											&& responseText.contains("<uuid>"))
+										{
+											String uuidString = parseUUID(responseText);
+											Activator.getDefault()
+												.getPreferenceStore()
+												.setValue(
+												    IPreferencesConstants.STORED_USER_UUID,
+													uuidString);
+										}
 									}
-									catch (IOException e)
-									{
-										Activator.getDefault().log(e);
-									}
-									if (responseText != null
-										&& responseText.contains("<uuid>"))
-									{
-										String uuidString = parseUUID(responseText);
-										Activator.getDefault()
-											.getPreferenceStore()
-											.setValue(
-											    IPreferencesConstants.STORED_USER_UUID,
-												uuidString);
-									}
+								} catch (Exception e) {
+									Activator.getDefault().log(e);
 								}
 							}
 						};

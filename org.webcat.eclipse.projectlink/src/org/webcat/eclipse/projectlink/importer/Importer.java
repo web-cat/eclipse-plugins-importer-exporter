@@ -474,12 +474,16 @@ public class Importer
 				
 				@Override
 				public void run() {
+					
+					// Wrap run in a catch-all to avoid Timer cancellations.
 					try {
 						SensorBaseClient.getInstance().downloadStarterProjectHappened(
 							    workspaceProject.getLocationURI().getPath(),
 							    description.getName());
 					} catch (SensorBaseClientException e) {
 						errors.add(new ImportError(project, e.getMessage()));
+						Activator.getDefault().log(e);
+					} catch (Exception e) {
 						Activator.getDefault().log(e);
 					}
 				}
