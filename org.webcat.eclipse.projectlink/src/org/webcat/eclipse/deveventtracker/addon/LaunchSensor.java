@@ -15,6 +15,7 @@ import org.eclipse.jdt.junit.TestRunListener;
 import org.eclipse.jdt.junit.model.ITestCaseElement;
 import org.eclipse.jdt.junit.model.ITestElement.Result;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
+import org.webcat.eclipse.projectlink.Activator;
 
 /**
  * Detects program and test launches and adds dev events accordingly.
@@ -115,7 +116,9 @@ public class LaunchSensor implements ILaunchListener {
 			}
 			
 		} catch (DebugException e) {
-			// do nothing
+			Activator.getDefault().log(e);
+		} catch (ArrayIndexOutOfBoundsException e) {
+			Activator.getDefault().log(e);
 		}
 		
 		this.eclipseSensor.addDevEvent("Termination", this.projectURI, this.fileURI, keyValueMap, "Program Terminated");

@@ -1321,15 +1321,19 @@ public class EclipseSensor {
 						
 						@Override
 						public void run() {
-							ObjectId hash = EclipseSensor.this.commitSnapshot(
-									projectURI.getPath(), commitMessage);
-							if (hash != null) {
-								keyValueMap.put("CommitHash", hash.getName());
+							try {
+								ObjectId hash = EclipseSensor.this.commitSnapshot(
+										projectURI.getPath(), commitMessage);
+								if (hash != null) {
+									keyValueMap.put("CommitHash", hash.getName());
+								}
+								
+								EclipseSensor.this.addDevEvent(
+										EclipseSensorConstants.DEVEVENT_EDIT, projectURI,
+										fileResource, keyValueMap, message.toString());
+							} catch (Exception e) {
+								Activator.getDefault().log(e);
 							}
-							
-							EclipseSensor.this.addDevEvent(
-									EclipseSensorConstants.DEVEVENT_EDIT, projectURI,
-									fileResource, keyValueMap, message.toString());
 						}
 					};
 					
