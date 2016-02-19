@@ -148,17 +148,6 @@ public class AuthenticationDialog extends TitleAreaDialog
 
 
 	// ----------------------------------------------------------
-	/**
-	 * Return the initial size of the dialog.
-	 */
-	@Override
-	protected Point getInitialSize()
-	{
-		return new Point(482, 246);
-	}
-
-
-	// ----------------------------------------------------------
 	@Override
 	protected void okPressed()
 	{
