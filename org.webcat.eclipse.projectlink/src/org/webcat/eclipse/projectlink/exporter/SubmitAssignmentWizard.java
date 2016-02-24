@@ -244,12 +244,19 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 	private ISubmittableItem[] getFilesToSubmit()
 	{
 		IProject project = submitPage.getProject();
+		String projectDirectory = project.getLocationURI().toString();
+		File gitDir = new File(projectDirectory, ".git");
 		File[] children = project.getLocation().toFile().listFiles();
-		ISubmittableItem[] submittables = new SubmittableFile[children.length - 1];
+		ISubmittableItem[] submittables = null;
+		if (gitDir.isDirectory()) {
+			submittables = new SubmittableFile[children.length - 1];
+		} else {
+			submittables = new SubmittableFile[children.length];
+		}
 		int childrenIterator = 0;
 		int submittablesIterator = 0;
 		while (submittablesIterator < submittables.length) {
-			if (children[childrenIterator].isFile() || !children[childrenIterator].getName().contains(".git")) {
+			if (children[childrenIterator].isFile() || !(children[childrenIterator].isDirectory() &&  children[childrenIterator].getName().equals(".git"))) {
 				submittables[submittablesIterator] = new SubmittableFile(children[childrenIterator]);
 				submittablesIterator++;
 			}
@@ -259,7 +266,6 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 		
 //		return new ISubmittableItem[] {
 //				new SubmittableFile(project.getLocation().toFile())
-//		};
 		
 		return submittables;
 	}
