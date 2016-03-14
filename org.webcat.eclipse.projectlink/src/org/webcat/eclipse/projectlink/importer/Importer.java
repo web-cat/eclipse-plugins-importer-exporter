@@ -461,7 +461,7 @@ public class Importer
 		        }
 	
 		        workspaceProject.create(description, null);
-		        EclipseSensor.IMPORT = "true";
+		        EclipseSensor.IMPORT = true;
 		        workspaceProject.open(null);
 		        
 		        tracker.setProjectNameForUri(project.getURI(),

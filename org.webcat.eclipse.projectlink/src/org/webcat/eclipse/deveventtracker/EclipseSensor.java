@@ -99,7 +99,7 @@ public class EclipseSensor {
 	 * A boolean flag that keeps track of whether a file open
 	 * event comes directly after an import or not.
 	 */
-	public static String IMPORT = "true";
+	public static boolean IMPORT = true;
 	
 	/**
 	 * Volatile boolean flag to keep track of whether a post to the server
@@ -1232,9 +1232,9 @@ public class EclipseSensor {
 				keyValueMap.put(EclipseSensorConstants.UNIT_NAME, projectName);
 
 				if (((IProject) resource).isOpen()) {
-					if (Boolean.parseBoolean(EclipseSensor.IMPORT)) {
+					if (EclipseSensor.IMPORT) {
 						keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Import");
-						EclipseSensor.IMPORT = "false";
+						EclipseSensor.IMPORT = false;
 					} else {
 						keyValueMap.put(EclipseSensorConstants.SUBTYPE, "Open");
 					}
