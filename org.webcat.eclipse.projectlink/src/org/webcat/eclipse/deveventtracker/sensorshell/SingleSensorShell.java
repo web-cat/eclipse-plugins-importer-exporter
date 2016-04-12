@@ -33,7 +33,7 @@ public class SingleSensorShell implements Shell {
 	 * Indicates if SensorShell is running interactively and thus output should
 	 * be printed.
 	 */
-	private boolean isInteractive = true;
+	private boolean isInteractive = false;
 
 	/** The notification shell prompt string. */
 	private String prompt = ">> ";

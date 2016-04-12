@@ -66,7 +66,7 @@ public class SensorBaseClient
 	public final static String SENSORBASECLIENT_TIMEOUT_KEY = "CLIENT_TIMEOUT";
 
 	/** To facilitate debugging of problems using this system. */
-	private boolean isTraceEnabled = true;
+	private boolean isTraceEnabled = false;
 
 	/**
 	 * The default timeout for the Restlet client.

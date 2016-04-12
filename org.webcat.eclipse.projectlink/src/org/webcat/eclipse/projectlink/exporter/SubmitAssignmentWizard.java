@@ -150,6 +150,7 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 						SensorBaseClient.getInstance().submissionHappened(
 						    submitPage.getProject());
 					} catch (SensorBaseClientException e) {
+						Activator.getDefault().log("Couldn't get SensorBaseClient instance.", e);
 						new  ExceptionDialog(getContainer().getShell(), e, true).open();
 					} catch (Exception e) {
 						Activator.getDefault().log(e);
@@ -191,7 +192,8 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 		}
 		catch (Exception e)
 		{
-			new ExceptionDialog(getContainer().getShell(), e, true).open();
+			Activator.getDefault().log("Exception occured while submitting.", e);
+			new ExceptionDialog(getContainer().getShell(), e, false).open();
 			return false;
 		}
 		finally
