@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.TimerTask;
 
 import org.eclipse.core.resources.IProject;
@@ -246,29 +247,22 @@ public class SubmitAssignmentWizard extends Wizard implements IExportWizard
 	private ISubmittableItem[] getFilesToSubmit()
 	{
 		IProject project = submitPage.getProject();
-		String projectDirectory = project.getLocationURI().toString();
-		File gitDir = new File(projectDirectory, ".git");
 		File[] children = project.getLocation().toFile().listFiles();
-		ISubmittableItem[] submittables = null;
-		if (gitDir.isDirectory()) {
-			submittables = new SubmittableFile[children.length - 1];
-		} else {
-			submittables = new SubmittableFile[children.length];
-		}
+		ArrayList<ISubmittableItem> submittables = new ArrayList<ISubmittableItem>();
 		int childrenIterator = 0;
-		int submittablesIterator = 0;
-		while (submittablesIterator < submittables.length) {
-			if (children[childrenIterator].isFile() || !(children[childrenIterator].isDirectory() &&  children[childrenIterator].getName().equals(".git"))) {
-				submittables[submittablesIterator] = new SubmittableFile(children[childrenIterator]);
-				submittablesIterator++;
+		while (childrenIterator < children.length) {
+			if (children[childrenIterator].isFile() || !children[childrenIterator].getName().equals(".git")) {
+				submittables.add(new SubmittableFile(children[childrenIterator]));
 			}
 			
 			childrenIterator++;
 		}
 		
-//		return new ISubmittableItem[] {
-//				new SubmittableFile(project.getLocation().toFile())
+		ISubmittableItem[] items = new ISubmittableItem[submittables.size()];
+		for (int i = 0; i < items.length; i++) {
+			items[i] = submittables.get(i);
+		}
 		
-		return submittables;
+		return items;
 	}
 }

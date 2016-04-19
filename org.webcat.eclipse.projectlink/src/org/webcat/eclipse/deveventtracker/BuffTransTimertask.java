@@ -26,7 +26,9 @@ public class BuffTransTimertask extends TimerTask {
       sensor.processBuffTrans();
     }
     catch (SensorShellException e) {
-      Activator.getDefault().log(e);
+      Activator.getDefault().log("Couldn't get EclipseSensor instance.", e);
+    } catch (Exception e) {
+    	Activator.getDefault().log(e);
     }
   }
 }

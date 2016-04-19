@@ -24,6 +24,8 @@ public class StateChangeTimerTask extends TimerTask {
 			EclipseSensor sensor = EclipseSensor.getInstance();
 			sensor.processStateChangeActivity();
 		} catch (SensorShellException e) {
+			Activator.getDefault().log("Couldn't get EclipseSensor instance.", e);
+		} catch (Exception e) {
 			Activator.getDefault().log(e);
 		}
 	}
