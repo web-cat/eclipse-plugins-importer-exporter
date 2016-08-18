@@ -75,9 +75,9 @@ public class LaunchSensor implements ILaunchListener {
 		String name = arg0.getLaunchConfiguration().getName();
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		if (name.toLowerCase().contains("test")) {
-			keyValueMap.put("LaunchType", "Test");
+			keyValueMap.put("Subtype", "Test");
 		} else {
-			keyValueMap.put("LaunchType", "Normal");
+			keyValueMap.put("Subtype", "Normal");
 		}
 		
 		this.eclipseSensor.addDevEvent("Launch", this.projectURI, this.fileURI, keyValueMap, "Launch happened");
@@ -96,7 +96,7 @@ public class LaunchSensor implements ILaunchListener {
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		
 		if (name.toLowerCase().contains("test") || name.toLowerCase().contains("junit")) {
-			keyValueMap.put("TerminationType", "Test");
+			keyValueMap.put("Subtype", "Test");
 			keyValueMap.put("TestSucesses", Integer.toString(this.successes));
 			keyValueMap.put("TestFailures", Integer.toString(this.failures));
 			keyValueMap.put("TestErrors", Integer.toString(this.errors));
@@ -104,7 +104,7 @@ public class LaunchSensor implements ILaunchListener {
 			this.failures = 0;
 			this.errors = 0;
 		} else {
-			keyValueMap.put("TerminationType", "Normal");
+			keyValueMap.put("Subtype", "Normal");
 		}
 		
 		try {
