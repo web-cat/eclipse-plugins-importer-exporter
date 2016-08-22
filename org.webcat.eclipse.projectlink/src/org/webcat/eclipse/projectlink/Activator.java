@@ -20,6 +20,7 @@
 package org.webcat.eclipse.projectlink;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 
 import org.eclipse.core.resources.IWorkspace;
@@ -90,6 +91,8 @@ public class Activator extends AbstractUIPlugin
 	public void stop(BundleContext context) throws Exception
 	{
 		plugin = null;
+		URI projectUri = devEventTrackerSensor.getActiveFile();
+		devEventTrackerSensor.addDevEvent("Shutdown", projectUri, null, null, "Shutdown detected.");
 	    devEventTrackerSensor.stop();
 	    devEventTrackerSensor = null;
 		super.stop(context);
