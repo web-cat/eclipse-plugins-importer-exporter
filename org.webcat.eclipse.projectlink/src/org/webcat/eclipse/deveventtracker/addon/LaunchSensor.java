@@ -9,7 +9,9 @@ import java.util.Map;
 
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchListener;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.junit.TestRunListener;
 import org.eclipse.jdt.junit.model.ITestCaseElement;
@@ -21,7 +23,7 @@ import org.webcat.eclipse.projectlink.Activator;
  * Detects program and test launches and adds dev events accordingly.
  * 
  * @author Ayaan Kazerouni
- * @version 1/12/2016
+ * @version 12/1/2017
  */
 public class LaunchSensor implements ILaunchListener {
 
@@ -51,7 +53,9 @@ public class LaunchSensor implements ILaunchListener {
 		this.listener = new TestRunListener() {
 			
 			public void testCaseFinished(ITestCaseElement element) {
+				System.out.println(element.getTestMethodName() + ", " + element.getTestClassName());
 				Result result = element.getTestResult(true);
+				
 				if (result.equals(Result.OK)) {
 					successes++;
 				} else if (result.equals(Result.FAILURE)) {
@@ -73,12 +77,20 @@ public class LaunchSensor implements ILaunchListener {
 	 */
 	public void launchAdded(ILaunch arg0) {
 		String name = arg0.getLaunchConfiguration().getName();
+		String launchMode = arg0.getLaunchMode();
 		Map<String, String> keyValueMap = new HashMap<String, String>();
-		if (name.toLowerCase().contains("test")) {
-			keyValueMap.put("Subtype", "Test");
-		} else {
-			keyValueMap.put("Subtype", "Normal");
+		
+		if (launchMode.equals(ILaunchManager.RUN_MODE)) {
+			if (name.toLowerCase().contains("test")) {
+				keyValueMap.put("Subtype", "Test");
+			} else {
+				keyValueMap.put("Subtype", "Normal");
+			}
+		} else if (launchMode.equals(ILaunchManager.DEBUG_MODE)) {
+			keyValueMap.put("Subtype", "Debug");
 		}
+		
+		keyValueMap.put("Unit-Name", name);
 		
 		this.eclipseSensor.addDevEvent("Launch", this.projectURI, this.fileURI, keyValueMap, "Launch happened");
 	}
@@ -93,19 +105,26 @@ public class LaunchSensor implements ILaunchListener {
 	 */
 	public void launchRemoved(ILaunch arg0) {
 		String name = arg0.getLaunchConfiguration().getName();
+		String launchMode = arg0.getLaunchMode();
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		
-		if (name.toLowerCase().contains("test") || name.toLowerCase().contains("junit")) {
-			keyValueMap.put("Subtype", "Test");
-			keyValueMap.put("TestSucesses", Integer.toString(this.successes));
-			keyValueMap.put("TestFailures", Integer.toString(this.failures));
-			keyValueMap.put("TestErrors", Integer.toString(this.errors));
-			this.successes = 0;
-			this.failures = 0;
-			this.errors = 0;
-		} else {
-			keyValueMap.put("Subtype", "Normal");
+		if (launchMode.equals(ILaunchManager.RUN_MODE)) {
+			if (name.toLowerCase().contains("test") || name.toLowerCase().contains("junit")) {
+				keyValueMap.put("Subtype", "Test");
+				keyValueMap.put("TestSucesses", Integer.toString(this.successes));
+				keyValueMap.put("TestFailures", Integer.toString(this.failures));
+				keyValueMap.put("TestErrors", Integer.toString(this.errors));
+				this.successes = 0;
+				this.failures = 0;
+				this.errors = 0;
+			} else {
+				keyValueMap.put("Subtype", "Normal");
+			}
+		} else if (launchMode.equals(ILaunchManager.DEBUG_MODE)) {
+			keyValueMap.put("Subtype", "Debug");
 		}
+		
+		keyValueMap.put("Unit-Name", name);
 		
 		try {
 			int exitValue = arg0.getProcesses()[0].getExitValue();
