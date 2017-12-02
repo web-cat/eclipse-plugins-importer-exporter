@@ -4,17 +4,19 @@
 package org.webcat.eclipse.deveventtracker.addon;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.ILaunch;
-import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.junit.TestRunListener;
 import org.eclipse.jdt.junit.model.ITestCaseElement;
+import org.eclipse.jdt.junit.model.ITestElement.FailureTrace;
 import org.eclipse.jdt.junit.model.ITestElement.Result;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
 import org.webcat.eclipse.projectlink.Activator;
@@ -31,9 +33,7 @@ public class LaunchSensor implements ILaunchListener {
 	private URI projectURI;
 	private URI fileURI;
 	private TestRunListener listener;
-	private int successes;
-	private int failures;
-	private int errors;
+	private List<ITestCaseElement> testCases;
 	
 	/**
 	 * Creates a new LaunchSensor that will be added as a listener
@@ -50,19 +50,11 @@ public class LaunchSensor implements ILaunchListener {
 		this.eclipseSensor = sensor;
 		this.projectURI = projectURI;
 		this.fileURI = this.eclipseSensor.getActiveFile();
+		this.testCases = new ArrayList<ITestCaseElement>();
 		this.listener = new TestRunListener() {
 			
 			public void testCaseFinished(ITestCaseElement element) {
-				System.out.println(element.getTestMethodName() + ", " + element.getTestClassName());
-				Result result = element.getTestResult(true);
-				
-				if (result.equals(Result.OK)) {
-					successes++;
-				} else if (result.equals(Result.FAILURE)) {
-					failures++;
-				} else if (result.equals(Result.ERROR)) {
-					errors++;
-				}
+				LaunchSensor.this.testCases.add(element);
 			}
 		};
 		
@@ -78,10 +70,12 @@ public class LaunchSensor implements ILaunchListener {
 	public void launchAdded(ILaunch arg0) {
 		String name = arg0.getLaunchConfiguration().getName();
 		String launchMode = arg0.getLaunchMode();
+		
 		Map<String, String> keyValueMap = new HashMap<String, String>();
 		
 		if (launchMode.equals(ILaunchManager.RUN_MODE)) {
 			if (name.toLowerCase().contains("test")) {
+				System.out.println("Launch added");
 				keyValueMap.put("Subtype", "Test");
 			} else {
 				keyValueMap.put("Subtype", "Normal");
@@ -92,7 +86,7 @@ public class LaunchSensor implements ILaunchListener {
 		
 		keyValueMap.put("Unit-Name", name);
 		
-		this.eclipseSensor.addDevEvent("Launch", this.projectURI, this.fileURI, keyValueMap, "Launch happened");
+		this.eclipseSensor.addDevEvent("Launch", this.projectURI, this.fileURI, keyValueMap, "Program Launched");
 	}
 
 	public void launchChanged(ILaunch arg0) {
@@ -106,17 +100,35 @@ public class LaunchSensor implements ILaunchListener {
 	public void launchRemoved(ILaunch arg0) {
 		String name = arg0.getLaunchConfiguration().getName();
 		String launchMode = arg0.getLaunchMode();
+		
 		Map<String, String> keyValueMap = new HashMap<String, String>();
+		keyValueMap.put("Unit-Name", name);
 		
 		if (launchMode.equals(ILaunchManager.RUN_MODE)) {
 			if (name.toLowerCase().contains("test") || name.toLowerCase().contains("junit")) {
 				keyValueMap.put("Subtype", "Test");
-				keyValueMap.put("TestSucesses", Integer.toString(this.successes));
-				keyValueMap.put("TestFailures", Integer.toString(this.failures));
-				keyValueMap.put("TestErrors", Integer.toString(this.errors));
-				this.successes = 0;
-				this.failures = 0;
-				this.errors = 0;
+				for (ITestCaseElement currentElement : this.testCases) {
+					keyValueMap.put("TestMethodName", currentElement.getTestMethodName());
+					Result result = currentElement.getTestResult(true);
+					if (result.equals(Result.OK)) {
+						keyValueMap.put("Subsubtype", "TestSuccess");
+					} else if (result.equals(Result.FAILURE)) {
+						keyValueMap.put("Subsubtype", "TestFailure");
+					} else if (result.equals(Result.ERROR)) {
+						FailureTrace failureTrace = currentElement.getFailureTrace();
+						if (failureTrace != null) {
+							String stackTrace = failureTrace.getTrace();
+							String exception = stackTrace.split("\n")[0];
+							keyValueMap.put("Subsubtype", exception);
+						} else {
+							keyValueMap.put("Subsubtype", "Error");
+						}
+					}
+					
+					this.eclipseSensor.addDevEvent("Termination", this.projectURI, this.fileURI, keyValueMap, "Program Terminated");
+				}
+				this.testCases = new ArrayList<ITestCaseElement>();
+				return; // don't add dev-events for normal and debug launch removals
 			} else {
 				keyValueMap.put("Subtype", "Normal");
 			}
@@ -124,14 +136,17 @@ public class LaunchSensor implements ILaunchListener {
 			keyValueMap.put("Subtype", "Debug");
 		}
 		
-		keyValueMap.put("Unit-Name", name);
-		
+		keyValueMap = this.setLaunchStatus(arg0, keyValueMap);
+		this.eclipseSensor.addDevEvent("Termination", this.projectURI, this.fileURI, keyValueMap, "Program Terminated");
+	}
+	
+	private Map<String, String> setLaunchStatus(ILaunch arg0, Map<String, String> keyValueMap) {
 		try {
 			int exitValue = arg0.getProcesses()[0].getExitValue();
 			if (exitValue == 0) {
-				keyValueMap.put("NormalTermination", "true");
+				keyValueMap.put("Subsubtype", "Normal");
 			} else {
-				keyValueMap.put("NormalTermination", "false");
+				keyValueMap.put("Subsubtype", "Error");
 			}
 			
 		} catch (DebugException e) {
@@ -140,6 +155,6 @@ public class LaunchSensor implements ILaunchListener {
 			Activator.getDefault().log(e);
 		}
 		
-		this.eclipseSensor.addDevEvent("Termination", this.projectURI, this.fileURI, keyValueMap, "Program Terminated");
+		return keyValueMap;
 	}
 }
