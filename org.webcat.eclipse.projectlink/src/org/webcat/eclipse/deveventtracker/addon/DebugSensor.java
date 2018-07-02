@@ -109,8 +109,9 @@ public class DebugSensor implements IDebugEventSetListener {
 			case DebugEvent.STEP_OVER:
 				debugType = "Step over";
 				break;
-			default:
-				debugType = "Unknown";
+			case DebugEvent.STEP_END:
+				debugType = "Step end";
+				break;
 			}
 		}
 
