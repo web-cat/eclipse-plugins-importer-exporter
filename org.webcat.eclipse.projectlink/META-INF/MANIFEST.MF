@@ -14,7 +14,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt.core,
  org.eclipse.jface.text,
  org.eclipse.ui.workbench.texteditor,
- org.eclipse.jdt.junit.core
+ org.eclipse.jdt.junit.core,
+ org.eclipse.debug.ui;bundle-version="3.12.50"
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
