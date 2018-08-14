@@ -8,50 +8,56 @@ import org.webcat.eclipse.projectlink.Activator;
 
 /**
  * Sensor for output written to stdout and stderr.
- * Behaves like a singleton.
+ * Wraps a singleton ConsoleOutput object, which stores
+ * data that is communicated to other parts of the plugin.
  * 
  * @author Ayaan Kazerouni
  * @version 08/13/2018
  */
 public class OutputSensor implements IConsoleLineTracker {
 	private IConsole console;
-	public static StringBuilder output = null;
-	public static boolean launchFinished = false;
-	private static int linesAdded;
-	private static boolean stoppedAppending = false;
 	
 	/**
-	 * Stop appending output if output exceeds these many lines.
-	 * If the launch goes into an infinite loop, sending that much data
-	 * over the network would get very slow and is probably not that useful.
+	 * Singleton instance.
 	 */
-	private static final int MAX_LINES = 1000;
+	private static ConsoleOutput outputInstance;
+	
+	public OutputSensor() {
+		outputInstance = getOutputInstance();
+	}
 	
 	/**
-	 * A message to be written to the output indicating that we truncated it because it was too long.
+	 * Gets the singleton instance of the output object.
+	 * 
+	 * @return the ConsoleOutput object
 	 */
-	private static final String TRUNC_MESSAGE = "org.webcat.deveventtracker.OutputTruncated";
+	public static ConsoleOutput getOutputInstance() {
+		if (outputInstance == null) {
+			outputInstance = new ConsoleOutput();
+			return outputInstance;
+		} else {
+			return outputInstance;
+		}
+	}
 	
 	/**
-	 * Reset the output.
+	 * Reset the console. DOES NOT reset the output,
+	 * since the stored output data is usually consumed
+	 * after the OutputSensor is disposed of.
 	 */
 	public void dispose() {
 		this.console = null;
-		output.trimToSize();
 	}
 
 	/**
-	 * Set the console to get lines from, and reset the output builder.
+	 * Set the console to get lines from, and reset the output.
 	 * 
 	 * @param console
 	 * 		The console where output is read from.
 	 */
 	public void init(IConsole console) {
 		this.console = console;
-		output = new StringBuilder();
-		linesAdded = 0;
-		stoppedAppending = false;
-		launchFinished = false;
+		outputInstance.reset();
 	}
 
 	/**
@@ -65,24 +71,91 @@ public class OutputSensor implements IConsoleLineTracker {
 		try {
 			if (this.console != null) {
 				String line = this.console.getDocument().get(region.getOffset(), region.getLength());
-				if (linesAdded <= MAX_LINES) {
-					linesAdded++;
-					output.append(line + "\n");
-				} else if (!stoppedAppending) { // add a final line saying the output was too long, then stop storing output
-					output.append(TRUNC_MESSAGE);
-					stoppedAppending = true;
-				}
-				
-				if (this.console.getProcess().isTerminated()) {
-					launchFinished = true;
-				}
+				outputInstance.addLine(line);
 			}
 		} catch (BadLocationException e) {
 			Activator.getDefault().log(e);
 		}
 	}
 	
-	public static String getOutput() {
-		return output.toString().trim();
+	/**
+	 * Inner singleton class that stores output captured from
+	 * the OutputSensor.
+	 * 
+	 * @author Ayaan Kazerouni
+	 * @version 08/14/2018
+	 */
+	public static class ConsoleOutput {
+		private StringBuilder output;
+		private int linesAdded;
+		private boolean stoppedAppending;
+		
+		/**
+		 * Stop appending output if output exceeds these many lines.
+		 * If the launch goes into an infinite loop, sending that much data
+		 * over the network would get very slow and is probably not that useful.
+		 */
+		private static final int MAX_LINES = 1000;
+		
+		/**
+		 * A message to be written to the output indicating that we truncated it because it was too long.
+		 */
+		private static final String TRUNC_MESSAGE = "org.webcat.deveventtracker.OutputTruncated";
+		
+		private ConsoleOutput() {
+			this.reset();
+		}
+		
+		/**
+		 * Get whatever has been captured so far.
+		 * @return A string containing the lines seen in
+		 * 		the console so far.
+		 */
+		public String getOutput() {
+			return this.output.toString().trim();
+		}
+		
+		/**
+		 * Increase the number of lines appended by 1.
+		 */
+		public void incrementLines() {
+			this.linesAdded++;
+		}
+		
+		/**
+		 * Reset the singleton instance. Sets the line count to 0 and
+		 * flushes the output.
+		 */
+		public void reset() {
+			this.linesAdded = 0;
+			this.output = new StringBuilder();
+			this.stoppedAppending = false;
+		}
+		
+		/**
+		 * Checks if this ConsoleOutput is full yet.
+		 * 
+		 * @return false if more than MAX_LINES lines have been read,
+		 * 		true otherwise
+		 */
+		public boolean underCapacity() {
+			return this.linesAdded <= MAX_LINES;
+		}
+		
+		/**
+		 * Appends the given line to the output, if it is under capacity.
+		 * 
+		 * @param line
+		 * 		The line just read by the OutputSensor
+		 */
+		public void addLine(String line) {
+			if (this.underCapacity()) {
+				this.output.append(line + "\n");
+				this.linesAdded++;
+			} else if (!this.stoppedAppending) { // add a final line saying the output was too long, then stop storing output
+				this.output.append(TRUNC_MESSAGE);
+				this.stoppedAppending = true;
+			}
+		}
 	}
 }

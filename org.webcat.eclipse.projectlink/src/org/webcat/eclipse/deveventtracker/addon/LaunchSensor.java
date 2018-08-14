@@ -19,6 +19,7 @@ import org.eclipse.jdt.junit.model.ITestCaseElement;
 import org.eclipse.jdt.junit.model.ITestElement.FailureTrace;
 import org.eclipse.jdt.junit.model.ITestElement.Result;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;
+import org.webcat.eclipse.deveventtracker.addon.OutputSensor.ConsoleOutput;
 import org.webcat.eclipse.projectlink.Activator;
 
 /**
@@ -41,6 +42,11 @@ public class LaunchSensor implements ILaunchListener {
 	 */
 	private TestRunListener listener;
 	private List<ITestCaseElement> testCases;
+	
+	/**
+	 * Singleton instance of ConsoleOutput
+	 */
+	private ConsoleOutput consoleOutput;
 	
 	/**
 	 * Creates a new LaunchSensor that will be added as a listener
@@ -66,6 +72,8 @@ public class LaunchSensor implements ILaunchListener {
 		};
 		
 		JUnitCore.addTestRunListener(this.listener);
+		
+		this.consoleOutput = OutputSensor.getOutputInstance();
 	}
 
 	/**
@@ -181,8 +189,10 @@ public class LaunchSensor implements ILaunchListener {
 		return keyValueMap;
 	}
 	
+	// Adds console output, if any
 	private Map<String, String> putLaunchOutput(Map<String, String> keyValueMap) {
-		String output = OutputSensor.getOutput();
+		String output = this.consoleOutput.getOutput();
+		System.out.println(output);
 		if (output.length() > 0) {
 			keyValueMap.put("ConsoleOutput", output);
 		}
