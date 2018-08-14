@@ -128,10 +128,6 @@ public class LaunchSensor implements ILaunchListener {
 		
 		keyValueMap = this.putLaunchOutput(keyValueMap);
 		
-		for (String current : keyValueMap.keySet()) {
-			System.out.println(current + ": " + keyValueMap.get(current));
-		}
-		
 		this.eclipseSensor.addDevEvent("Termination", this.projectURI, this.fileURI, keyValueMap, "Program Terminated");
 	}
 

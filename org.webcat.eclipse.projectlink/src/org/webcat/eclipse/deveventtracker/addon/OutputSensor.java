@@ -8,14 +8,15 @@ import org.webcat.eclipse.projectlink.Activator;
 
 /**
  * Sensor for output written to stdout and stderr.
- * Behaves as a singleton.
+ * Behaves like a singleton.
  * 
- * @author ayaankazerouni
+ * @author Ayaan Kazerouni
  * @version 08/13/2018
  */
 public class OutputSensor implements IConsoleLineTracker {
 	private IConsole console;
 	public static StringBuilder output = null;
+	public static boolean launchFinished = false;
 	private static int linesAdded;
 	private static boolean stoppedAppending = false;
 	
@@ -24,7 +25,7 @@ public class OutputSensor implements IConsoleLineTracker {
 	 * If the launch goes into an infinite loop, sending that much data
 	 * over the network would get very slow and is probably not that useful.
 	 */
-	private static final int MAX_LINES = 2000;
+	private static final int MAX_LINES = 1000;
 	
 	/**
 	 * A message to be written to the output indicating that we truncated it because it was too long.
@@ -50,6 +51,7 @@ public class OutputSensor implements IConsoleLineTracker {
 		output = new StringBuilder();
 		linesAdded = 0;
 		stoppedAppending = false;
+		launchFinished = false;
 	}
 
 	/**
@@ -63,12 +65,16 @@ public class OutputSensor implements IConsoleLineTracker {
 		try {
 			if (this.console != null) {
 				String line = this.console.getDocument().get(region.getOffset(), region.getLength());
-				linesAdded++;
 				if (linesAdded <= MAX_LINES) {
+					linesAdded++;
 					output.append(line + "\n");
 				} else if (!stoppedAppending) { // add a final line saying the output was too long, then stop storing output
 					output.append(TRUNC_MESSAGE);
 					stoppedAppending = true;
+				}
+				
+				if (this.console.getProcess().isTerminated()) {
+					launchFinished = true;
 				}
 			}
 		} catch (BadLocationException e) {
