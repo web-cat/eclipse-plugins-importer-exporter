@@ -8,6 +8,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.IDebugEventSetListener;
 import org.eclipse.debug.core.model.IDebugTarget;
+import org.eclipse.debug.core.model.RuntimeProcess;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.webcat.eclipse.deveventtracker.EclipseSensor;

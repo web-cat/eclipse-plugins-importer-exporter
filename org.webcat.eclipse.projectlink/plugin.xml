@@ -75,5 +75,12 @@
          </action>
       </actionSet>
    </extension>
-
+   <extension 
+   		point="org.eclipse.debug.ui.consoleLineTrackers">
+     <consoleLineTracker
+     	id="org.webcat.eclipse.deveventtracker.addon.OutputSensor"
+     	class="org.webcat.eclipse.deveventtracker.addon.OutputSensor"
+     	processType="java">
+     </consoleLineTracker>
+   </extension>
 </plugin>
