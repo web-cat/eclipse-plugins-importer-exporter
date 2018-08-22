@@ -71,6 +71,7 @@ public class OutputSensor implements IConsoleLineTracker {
 		try {
 			if (this.console != null) {
 				String line = this.console.getDocument().get(region.getOffset(), region.getLength());
+				line = line.substring(0, Math.min(line.length(), 80)); // 80ch limit
 				outputInstance.addLine(line);
 			}
 		} catch (BadLocationException e) {
@@ -95,7 +96,7 @@ public class OutputSensor implements IConsoleLineTracker {
 		 * If the launch goes into an infinite loop, sending that much data
 		 * over the network would get very slow and is probably not that useful.
 		 */
-		private static final int MAX_LINES = 1000;
+		private static final int MAX_LINES = 500;
 		
 		/**
 		 * A message to be written to the output indicating that we truncated it because it was too long.

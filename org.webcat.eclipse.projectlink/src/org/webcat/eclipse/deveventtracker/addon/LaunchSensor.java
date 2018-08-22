@@ -192,7 +192,6 @@ public class LaunchSensor implements ILaunchListener {
 	// Adds console output, if any
 	private Map<String, String> putLaunchOutput(Map<String, String> keyValueMap) {
 		String output = this.consoleOutput.getOutput();
-		System.out.println(output);
 		if (output.length() > 0) {
 			keyValueMap.put("ConsoleOutput", output);
 		}
